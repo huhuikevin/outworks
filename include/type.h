@@ -13,6 +13,10 @@
 #define	ucharb	  unsigned char	bdata
 #define	uinti	  unsigned int	idata
 #define	uchari	  unsigned char	idata
+#define BOOL      char
+
+#define TRUE      1
+#define FALSE     0
 
 #define int8u unsigned char
 #define int16u unsigned int 

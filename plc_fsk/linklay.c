@@ -31,6 +31,8 @@ uchar mac_addr[MAC_ADDR_LEN];
 
 uchar send_seq = 0;
 
+uchar Glinktype;
+
 typedef struct  
 {
 	int8u mac_addr[MAC_ADDR_LEN];			//MACµÿ÷∑
@@ -74,7 +76,7 @@ int8u linklay_send_data(int8u len)
         
     linklay_send_frame.checksum = CalChecksum(pdata, len+LINK_LAY_HEAD_LEN);
     
-    plc_tx_bytes(linklay_send_buf, len+LINK_LAY_HEAD_LEN);
+    mac_tx_bytes(linklay_send_buf, len+LINK_LAY_HEAD_LEN);
     
     return len;
 }
@@ -82,7 +84,7 @@ int8u linklay_send_data(int8u len)
 
 void linklay_recv_data()
 {
-    linklay_recv_data_len = plc_rx_bytes((uchar *)&linklay_recv_frame);
+    linklay_recv_data_len = mac_rx_bytes((uchar *)&linklay_recv_frame);
     if (linklay_recv_data_len == 0)//no data recved
         return;
     
@@ -113,4 +115,9 @@ void linklay_recv_data()
 void linklay_process()
 {
     linklay_recv_data();
+}
+
+void linklay_settype(uchar linktype)
+{
+    Glinktype = linktype;    
 }

@@ -47,8 +47,6 @@ uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
 uchar BitData_T[27];//BitDataBak_T[16];	//同步时的位数据
 uchar Bit1Num_T[27];					//同步时收到1的个数（18T内）
-//uchar Plc_Rec_Bz,Plc_S1,Plc_Sll;
-uint SSC15;
 uchar SYM_offset,Sync_Step,Sync_M;
 	  
 uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
@@ -1799,6 +1797,14 @@ intu8 plc_rx_bytes(uchar *pdata)
         return  Plc_data_byte_cnt;     
     }
     return 0;
+}
+
+/**/
+BOOL plc_tx_idle()
+{
+    if (Plc_Mode=='T')//NOT IN TX
+        return FALSE;
+    
 }
 /************************************/
 /************************************/
