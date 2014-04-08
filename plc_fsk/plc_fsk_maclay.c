@@ -1745,8 +1745,18 @@ void Sync1_Proc(void)
     }
 }
 
-void plc_tx_bytes(uchar *pdata ,uchar num)
+/**/
+BOOL plc_tx_idle()
+{
+    if (Plc_Mode=='T')//NOT IN TX
+        return FALSE;
+    
+}
+
+uchar plc_tx_bytes(uchar *pdata ,uchar num)
 {  
+    if (FALSE == plc_tx_idle())
+        return 0;
 	Plc_data[0]=0xaa;
 	Plc_data[1]=num;
 	MMemcpy(&Plc_data[2],pdata,num);
@@ -1770,8 +1780,8 @@ void plc_tx_bytes(uchar *pdata ,uchar num)
 	IniT16G1(CCPMODE);
     T16G1IF=0;
 	T16G1IE=1;
-	//	T16G1H=5;
-	//	T16G1L=0;		
+
+    return num;	
 }
 
 intu8 plc_rx_bytes(uchar *pdata)
@@ -1799,13 +1809,7 @@ intu8 plc_rx_bytes(uchar *pdata)
     return 0;
 }
 
-/**/
-BOOL plc_tx_idle()
-{
-    if (Plc_Mode=='T')//NOT IN TX
-        return FALSE;
-    
-}
+
 /************************************/
 /************************************/
 

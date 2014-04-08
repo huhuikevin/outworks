@@ -15,7 +15,7 @@
 
 #define LINK_LAY_OFFSET MAC_LAY_HEAD_LEN
 
-#define LINK_TYPE_PLC  0
-#define LINK_TYPE_2_4G 1
+#define MAC_TYPE_PLC  0
+#define MAC_TYPE_2_4G 1
 
 #endif /* __SYSTEM__H_ */

@@ -4,6 +4,10 @@
 //byte 5:  bit 7-4 trans sequnce , bit 3 acknck£¨pkg_type=1µÄÊ±ºò£¬1:ack£¬0:nck£©, bit 2-0 ??
 //byte 6: checksum 
 //byte 7-... data
+/*
+gateway      plc module   plcmodule    autodevice    autodevice    plcmodule  plcmodule     gateway
+uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->uartsend---->uartrecv
+*/
 
 #include <hic.h>
 #include "type.h"
@@ -31,7 +35,7 @@ uchar mac_addr[MAC_ADDR_LEN];
 
 uchar send_seq = 0;
 
-uchar Glinktype;
+uchar G_macType;
 
 typedef struct  
 {
@@ -117,7 +121,29 @@ void linklay_process()
     linklay_recv_data();
 }
 
-void linklay_settype(uchar linktype)
+void linklay_setmac(uchar mactype)
 {
-    Glinktype = linktype;    
+    G_macType = mactype;    
+}
+
+
+uchar mac_rx_bytes(uchar *pdata)
+{
+    uchar len = plc_rx_byte(pdata);
+    (len == 0)
+        len = wireless_2_4G_rx_byte(pdata);
+    
+    return len;
+}
+
+uchar mac_tx_bytes(uchar *pdata, uchar num)
+{
+    uchar realsend;
+    
+    if (G_macType == MAC_TYPE_PLC)
+        realsend = plc_tx_bytes(pdata, num);
+    if (G_macType == MAC_TYPE_2_4G)
+        realsend = wireless_2_4G_tx_bytes(pdata, num);
+    
+    return realsend;    
 }
