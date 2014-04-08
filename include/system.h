@@ -15,7 +15,17 @@
 
 #define LINK_LAY_OFFSET MAC_LAY_HEAD_LEN
 
-#define MAC_TYPE_PLC  0
-#define MAC_TYPE_2_4G 1
+typedef enum {
+    MacPlc = 0,
+    MacWireless_2_4G,
+    MacTypeEnd;
+}uMacType;
 
+
+typedef enum {
+    LinkLayIdle = 0,
+    LinkLayTx,
+    LinkLayWaitAck,
+    LinkLayRecvedAck,    
+}uLinkLayStatMachine;
 #endif /* __SYSTEM__H_ */

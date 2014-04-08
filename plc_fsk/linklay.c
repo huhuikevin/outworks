@@ -37,50 +37,66 @@ uchar send_seq = 0;
 
 uchar G_macType;
 
-typedef struct  
+typedef struct
 {
-	int8u mac_addr[MAC_ADDR_LEN];			//MAC地址
+ 	int8u mac_addr[MAC_ADDR_LEN];			//MAC地址
 	int8u Version : 2;	//协议版本号
 	int8u Pkg_Type : 1;			//包类型，0：普通包，1：应答包
 	int8u App_Len : 5;			//数据长度
 	int8u seq : 4;		//发送序列号
 	int8u anck : 1;				//应答
 	int8u res : 3;		//保留
-	int8u checksum;	//校验
+	int8u checksum;	//校验   
+}sLinkLayHead, *PsLinkLayHead;
+
+
+typedef struct  
+{
+    sLinkLayHead head;
 	int8u App_data[MAX_DATA_LEN];
 }linklay_Frame, *Plinklay_Frame;
 
-linklay_Frame linklay_send_frame;
-linklay_Frame linklay_recv_frame;
-uchar linklay_recv_data_len;
+typedef struct
+{
+    int8u mac_type;
+    int8u send_bytes;
+    int8u recv_bytes;
+    int8u send_seq;
+    int8u link_statmachine; 
+    linklay_Frame send_frame;
+    linklay_Frame recv_frame;
+}sLinklayCtrl, *PsLinklayCtrl;
+
+sLinklayCtrl linklay[MacTypeEnd];
 
 /* 上层拿这个buf进行数据发送 */
 uchar *linklay_send_buf()
 {
-    return (&linklay_send_frame.App_data[0]);    
+    return (&linklay[G_macType].send_frame.App_data[0]);    
 }
 
 /* 上层已经把数据填写到 linklay_send_buf 中了 */
 int8u linklay_send_data(int8u len)
 {
+    PsLinkLayHead pHead = &linklay[G_macType].send_frame.head;
     if (len > 32)
     {
         return 0;//send null     
     }
-    send_seq ++;
-    linklay_send_frame.mac_addr[0] = mac_addr[0];
-    linklay_send_frame.mac_addr[1] = mac_addr[1];
-    linklay_send_frame.mac_addr[2] = mac_addr[2];
-    linklay_send_frame.mac_addr[3] = mac_addr[3];
+    linklay[G_macType].send_seq ++;
+    pHead->mac_addr[0] = mac_addr[0];
+    pHead->mac_addr[1] = mac_addr[1];
+    pHead->mac_addr[2] = mac_addr[2];
+    pHead->mac_addr[3] = mac_addr[3];
     
-    linklay_send_frame.Version = VERSION
-    linklay_send_frame.Pkt_Type = PKG_TYPE_NORMAL;
-    linklay_send_frame.App_Len = len;
-    linklay_send_frame.Seq = send_seq;
+    pHead->Version = VERSION
+    pHead->Pkt_Type = PKG_TYPE_NORMAL;
+    pHead->App_Len = len;
+    pHead->Seq = send_seq;
         
-    linklay_send_frame.checksum = CalChecksum(pdata, len+LINK_LAY_HEAD_LEN);
+    pHead->checksum = CalChecksum((uchar *)pHead, len+sizeof(sLinkLayHead));
     
-    mac_tx_bytes(linklay_send_buf, len+LINK_LAY_HEAD_LEN);
+    mac_tx_bytes((uchar *)pHead, len+LINK_LAY_HEAD_LEN);
     
     return len;
 }
@@ -88,7 +104,7 @@ int8u linklay_send_data(int8u len)
 
 void linklay_recv_data()
 {
-    linklay_recv_data_len = mac_rx_bytes((uchar *)&linklay_recv_frame);
+    linklay_recv_data_len = mac_rx_bytes();
     if (linklay_recv_data_len == 0)//no data recved
         return;
     
@@ -127,13 +143,10 @@ void linklay_setmac(uchar mactype)
 }
 
 
-uchar mac_rx_bytes(uchar *pdata)
+void mac_rx_bytes()
 {
-    uchar len = plc_rx_byte(pdata);
-    (len == 0)
-        len = wireless_2_4G_rx_byte(pdata);
-    
-    return len;
+    plc_rx_byte(&linklay[MacPlc].send_frame);
+    wireless_2_4G_rx_byte(&linklay[MacWireless_2_4G].send_frame);
 }
 
 uchar mac_tx_bytes(uchar *pdata, uchar num)
