@@ -24,8 +24,12 @@ typedef enum {
 
 typedef enum {
     LinkLayIdle = 0,
-    LinkLayTx,
+    LinkLayTxing,
+    LinkLayTxPending,
+    LinkLayTxFinish,
     LinkLayWaitAck,
     LinkLayRecvedAck,    
 }uLinkLayStatMachine;
+
+
 #endif /* __SYSTEM__H_ */

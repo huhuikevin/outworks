@@ -67,33 +67,8 @@ section14 union SVR_LONG_B08 T16G1R_S;
 
 
 
-void iniSCI(void)
-{
-    TX1M=1; 
-    RX1M=1;
-}
 
-void Ini2571(void)
-{    
-    PAT=0X80;    
-    PBT=0X05;     //0x85      
-    PCT=0X10;  
-}       
-void RAM_Clr(void) //ramÈ«Çå
-{
-	__asm 
-  { 
-	CLR   IAAL;
-	CLR   IAAH;
-	CLR   IAD;
-	INC   IAAL,1;
-	JBS   PSW,C
-	GOTO  $-3;
-	INC   IAAH,1;
-	JBS   IAAH,4
-	GOTO  $-6;
-  } 
-}
+
 void IniT16G1(uchar Mode)
 {
     if(Mode==CCPMODE)		//²¶»ñ
@@ -143,14 +118,7 @@ void IniT16G2(uchar Mode)
     T16G2H=0; 
     T16G2CL=0x11;		//4:1 
 }
-void IO_Init(void)
-{
-    //GIE=1;
-    PBT=0x05;
-    PAT=0x80;
-    PCT=0x10;
-    STA=1;
-}
+
 
 void Ini_Plc_Rec(void)
 {
@@ -1790,25 +1758,24 @@ intu8 plc_rx_bytes(uchar *pdata)
     {
         MMemcpy(pdata, Plc_data, Plc_data_byte_cnt);
 
-            Plc_Mode=0;
-            IniT16G1(CCPMODE);
- 	        r_sync_bit=0;
-            tx_rx_byte=0;
-            Plc_SyncBZ=0;
-	        Sync_Step=0;
-	        T16G2IE=0;
+        Plc_Mode=0;
+        IniT16G1(CCPMODE);
+ 	    r_sync_bit=0;
+        tx_rx_byte=0;
+        Plc_SyncBZ=0;
+	    Sync_Step=0;
+	    T16G2IE=0;
   	  
-  	        TX_step=0;
-  	        R_LED=0;
-	        T16G1IF=0;
-  	        T16G1IE=1;
-            S_LED=0;        
+  	    TX_step=0;
+  	    R_LED=0;
+	    T16G1IF=0;
+  	    T16G1IE=1;
+        S_LED=0;        
         
         return  Plc_data_byte_cnt;     
     }
     return 0;
 }
-
 
 /************************************/
 /************************************/
