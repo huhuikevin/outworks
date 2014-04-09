@@ -16,12 +16,12 @@
 
 #define     FREQ_RX1    0x45
 #define	FREQ_RX0	0x44
-#define     FREQ_TX3	0x43
+#define FREQ_TX3	0x43
 #define	FREQ_TX2	0x42
 #define	FREQ_TX1	0x41
 #define	FREQ_TX0	0x40
 
-#define     PLC_00H_LNA1T0	0X00
+#define PLC_00H_LNA1T0	0X00
 #define	PLC_01H_LNA1T1   0X01
 #define	PLC_02H_LNA1T2   0X02
 #define	PLC_03H_LNA2T0   0X03
@@ -47,11 +47,6 @@
 #define	PLC_17H_ADC_DIN	0X17
 
 
-#define NOP()		 __Asm  nop 
-#define SLEEP()          __Asm  IDLE
-#define watchdog()       __Asm  CWDT
-#define ei()                 GIE=1
-#define di()                 GIE=0
 
 #endif /* __2571__H_ */
  

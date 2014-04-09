@@ -1,7 +1,9 @@
 //系统的一些函数
 #include <hic.h>
 #include "type.h"
+#include "system.h"
 
+void sys_app_process();
 
 void RAM_Clr(void) //ram全清
 {
@@ -17,4 +19,18 @@ void RAM_Clr(void) //ram全清
 	JBS   IAAH,4
 	GOTO  $-6;
   } 
+}
+
+
+void main(void)
+{
+    RAM_Clr();
+    board_init();//device 相关的文件中定义
+    watchdog();
+   
+    do {
+        watchdog();
+        enable_irq();
+        sys_app_process();
+    }while(1);
 }

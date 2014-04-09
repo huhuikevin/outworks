@@ -12,6 +12,7 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #include <hic.h>
 #include "type.h"
 #include "tool.h"
+#include "plc.h"
 
 #define VERSION 0
 #define PKG_TYPE_NORMAL 0
@@ -28,6 +29,15 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #define get_anck(byte4) (byte4>>3 & 0x1)
 
 #define get_seq(byte5) ((byte5>>4) & 0xf)
+
+typedef enum {
+    LinkLayIdle = 0,
+    LinkLayTxing,
+    LinkLayTxPending,
+    LinkLayTxFinish,
+    LinkLayWaitAck,
+    LinkLayRecvedAck,    
+}uLinkLayStatMachine;
 
 
 

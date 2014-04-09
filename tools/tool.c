@@ -1,8 +1,6 @@
 #include "tool.h"
 //#include "uart.h"
 
-
-
  int8u CalChecksum( int8u *p_data, int16u len)
 {
   int8u checksum = 0;
@@ -55,3 +53,39 @@ int8u MMemcmp( void *buf1,  void *buf2, int8u count)
 		return 0;
 }
 
+/************************************
+** 函数原型: void Delay(uchar MS); **
+** 功    能: 延时time=MS ms.     **
+************************************/
+void DelayMs(uint MS)
+{
+    uint aa;//,ucB;
+    uchar bb;
+    for(aa=0;aa<MS;aa++) 
+    {
+        for(bb=0;bb<0xFC;)
+        {
+            bb++;
+            NOP();
+        }
+        for(bb=0;bb<0xFC;)
+        {
+            bb++;
+            NOP();
+        }
+        for(bb=0;bb<0xFC;)
+        {
+            bb++;
+            NOP();
+        }
+        for(bb=0;bb<0xFC;)
+        {
+            bb++;
+            NOP();
+        }
+        for(bb=0;bb<0xFc;)
+        {
+            bb++;
+        }
+    }
+}

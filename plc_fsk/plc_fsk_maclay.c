@@ -7,7 +7,7 @@
 */
 #include <hic.h>
 #include "type.h"
-#include "2571.h"
+#include "soc_25xx.h"
 #include "tool.h"
 
 #define INSERT_0BIT_CNT 5
@@ -20,8 +20,8 @@
 #define	 STA     PB6
 #define  PLC_TXEN  PC1
 
-#define  PLC_TX   PLC_TXEN=1
-#define  PLC_RX   PLC_TXEN=0
+#define  PLC_TX   PLC_TXEN=1 //使能发送PA
+#define  PLC_RX   PLC_TXEN=0 //关闭发送PA
 
 #define  Sync_bit1_cnt_Max  0x1f
 
@@ -64,9 +64,6 @@ section13 uchar RSSIByte_buf[32],RSSIBit_buf[8];
 section14 uchar Zero_cnt,Tx_timer;
 section14 union SVR_INT_B08 T16G1R_int[8],T16G1R_20ms[8],T16G1R_old,T16G1R_new,T16G1_TRStartint;//T16G1R1,T16G1R2,T16G1R3,T16G1R4,T16G1R5,T16G1R6;
 section14 union SVR_LONG_B08 T16G1R_S;
-
-
-
 
 
 void IniT16G1(uchar Mode)
@@ -1776,7 +1773,49 @@ intu8 plc_rx_bytes(uchar *pdata)
     }
     return 0;
 }
+void plc_init(void)
+{
+    PLC_RX;
+    T16G1R_S.NumLong=50000;
+    Ini_Plc_Rec();
+    PLC_RX;
+    watchdog();
+    PLC_RW=0x01;
+    PLC_ADDR=0x51;
+    testbyte=PLC_DATA;
+    PLC_RW=0x00;
+ 
+    r_sync_bit=0;
+    watchdog();
+    T16G2CH=0x0b;
+    T16G2CL=0x10;		//4:1 
+    IniT16G1(CCPMODE);
+    T16G1IF=0;
+    T16G1IE=1;
+    continue_1bit_cnt = 0;         
+}
 
+void plc_driver_txrx(void)
+{
+    watchdog();
+    
+    if(Rec_Zero_bz)
+    {	
+        if(Plc_Mode=='R')
+        {       
+            if(Sync_Step=='E')
+                plc_recv_Proc();
+        }
+        else
+        {
+            if(Plc_Mode=='F')
+    	    {
+    	        Sync1_Proc();    		  
+    	    }
+        }
+        Rec_Zero_bz=0;
+    }    
+}
 /************************************/
 /************************************/
 
