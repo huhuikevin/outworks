@@ -2,6 +2,7 @@
 //从 plcfsk_rx_v12z_hd.c 修改而来
 #include <hic.h>
 #include "type.h"
+#include "system.h"
 #include "soc_25xx.h"
 #include "tool.h"
 
@@ -47,7 +48,7 @@ uchar SYM_offset,Sync_Step,Sync_M;
 uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
 uchar  bit1_cnt,plc_byte_data,sync_word_l;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
-uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,plc_data_len,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
+uchar  Plc_bit_rcv_cnt,Plc_byte_rcv_cnt,tr_rc_data_lgth,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
 section3 uchar Plc_recv[106];
 section3 uchar RSSIV,RSSIT; 
@@ -1712,7 +1713,6 @@ void Sync1_Proc(void)
     }
 }
 
-/**/
 BOOL plc_tx_idle()
 {
     if (Plc_Mode=='T')//NOT IN TX
@@ -1720,15 +1720,15 @@ BOOL plc_tx_idle()
     
 }
 
-uchar plc_tx_bytes(uchar *pdata ,uchar num)
+int8u plc_tx_bytes(uchar *pdata ,uchar num)
+
 {  
     if (FALSE == plc_tx_idle())
         return 0;
-	Plc_data[0]=0xaa;
-	Plc_data[1]=num;
-	MMemcpy(&Plc_data[2],pdata,num);
-	plc_data_len=num+2;
-	plc_byte_data=0x7e;	//先发两个0x7e，用来同步
+
+	Plc_recv[0]=0xaa;	
+    Plc_recv[1]=num+2;	
+	MMemcpy(&Plc_recv[2],pdata,num);
 	T16G2IE=0;
 	Ini_Plc_Tx();
     S_LED=1;
@@ -1739,23 +1739,25 @@ uchar plc_tx_bytes(uchar *pdata ,uchar num)
 	t_end_bit=0;
 	t_nor_bit=0;
 	Pn15_cnt=0;
-	Plc_data_bit_cnt=8;
-	Plc_data_byte_cnt=0;
-	continue_1bit_cnt = 0;
-			    		  
+	Plc_bit_rcv_cnt=8;
+	Plc_byte_rcv_cnt=0;
+	tr_rc_data_lgth=num+2;		//9
+	plc_byte_data=0xff;			    		  
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
     T16G1IF=0;
 	T16G1IE=1;
-
-    return num;	
+	//	T16G1H=5;
+	//	T16G1L=0;
+	return num;
 }
 
-intu8 plc_rx_bytes(uchar *pdata)
+int8u plc_rx_bytes(uchar *pdata)
 {
     if(tx_rx_byte=='R')
     {
-        MMemcpy(pdata, Plc_data, Plc_data_byte_cnt);
+    	int8u len = Plc_byte_rcv_cnt;
+        MMemcpy(pdata, Plc_recv, len);
 
         Plc_Mode=0;
         IniT16G1(CCPMODE);
@@ -1763,6 +1765,7 @@ intu8 plc_rx_bytes(uchar *pdata)
         tx_rx_byte=0;
         Plc_SyncBZ=0;
 	    Sync_Step=0;
+		Plc_byte_rcv_cnt = 0;
 	    T16G2IE=0;
   	  
   	    TX_step=0;
@@ -1771,10 +1774,11 @@ intu8 plc_rx_bytes(uchar *pdata)
   	    T16G1IE=1;
         S_LED=0;        
         
-        return  Plc_data_byte_cnt;     
+        return  len;     
     }
     return 0;
 }
+
 void plc_init(void)
 {
     PLC_RX;
@@ -1793,8 +1797,7 @@ void plc_init(void)
     T16G2CL=0x10;		//4:1 
     IniT16G1(CCPMODE);
     T16G1IF=0;
-    T16G1IE=1;
-    continue_1bit_cnt = 0;         
+    T16G1IE=1;         
 }
 
 void plc_driver_txrx(void)
@@ -1806,7 +1809,7 @@ void plc_driver_txrx(void)
         if(Plc_Mode=='R')
         {       
             if(Sync_Step=='E')
-                plc_recv_Proc();
+                Recvplc_Proc();
         }
         else
         {
@@ -1819,11 +1822,9 @@ void plc_driver_txrx(void)
     }    
 }
 
-
-
 /************************************/
 /************************************/
-
+#if 0
 void main(void)
 { 
     int8u i;
@@ -1868,7 +1869,7 @@ void main(void)
     // INTG=0x84;
     do
     {
-        ei(); 
+        enable_irq(); 
         watchdog();
 
         if(Rec_Zero_bz)
@@ -1914,4 +1915,4 @@ void main(void)
 	  
      }while(1);
 }
-
+#endif
