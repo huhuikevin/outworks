@@ -13,6 +13,7 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #include "type.h"
 #include "tool.h"
 #include "plc.h"
+#include "linklay.h"
 
 #define VERSION 0
 #define PKG_TYPE_NORMAL 0
@@ -53,9 +54,9 @@ typedef struct
 	int8u Version : 2;	//协议版本号
 	int8u Pkg_Type : 1;			//包类型，0：普通包，1：应答包
 	int8u App_Len : 5;			//数据长度
-	int8u seq : 4;		//发送序列号
-	int8u anck : 1;				//应答
-	int8u res : 3;		//保留
+	int8u Seq : 4;		//发送序列号
+	int8u Anck : 1;				//应答
+	int8u Res : 3;		//保留
 }sLinkLayHead, *PsLinkLayHead;
 
 
@@ -74,7 +75,7 @@ typedef struct
     int8u link_statmachine :2;
     int8u send_seq:4;
     int8u frame_state:4;
-    int32u recv_overflov;
+    int32u recv_overflow;
     linklay_Frame send_frame;
     linklay_Frame recv_frame;
 }sLinklayCtrl, *PsLinklayCtrl;
@@ -92,6 +93,12 @@ typedef struct
 #define linklay_has_recved_data(mac) (linklay[mac].frame_state & FRMAE_RECV_DATA)
 
 sLinklayCtrl linklay[MacTypeEnd];
+
+void linklay_send_process();
+void linklay_recv_process();
+int8u mac_rx_bytes();
+int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num);
+
 
 
 int8u linklay_send_data(int8u *pdata, int8u len, int8u mac)
@@ -136,12 +143,12 @@ void linklay_send_process()
         pHead->mac_addr[2] = mac_addr[2];
         pHead->mac_addr[3] = mac_addr[3];
     
-        pHead->Version = VERSION
-        pHead->Pkt_Type = PKG_TYPE_NORMAL;
+        pHead->Version = VERSION;
+        pHead->Pkg_Type = PKG_TYPE_NORMAL;
         pHead->App_Len = linklay[i].send_bytes;
         pHead->Seq = linklay[i].send_seq;
         
-        linklay[i].checksum = CalChecksum((uchar *)pHead, pkglen);
+        linklay[i].send_frame.checksum = CalChecksum((uchar *)pHead, pkglen);
     
         sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen + sizeof(int8u));
         if (sended) {
@@ -153,6 +160,27 @@ void linklay_send_process()
     };
 }
 
+
+void linklay_proc_error(PsLinklayCtrl *pCtrl)
+{
+	
+}
+
+void linklay_porc_not_me(PsLinklayCtrl *pCtrl)
+{
+	
+}
+
+void linklay_proc_normal_pkg(PsLinklayCtrl pCtrl)
+{
+	linklay_set_datarecved(pCtrl->mac_type);
+}
+
+
+void linklay_proc_ctrl_pkg(PsLinklayCtrl *pCtrl)
+{
+	
+}
 
 void linklay_recv_process()
 {
@@ -168,14 +196,14 @@ void linklay_recv_process()
         pHead = &linklay[i].recv_frame.head;
         checksum = CalChecksum((uchar *)&pHead, linklay[i].recv_bytes);
         linklay[i].recv_bytes -= sizeof(sLinkLayHead);//dec the head len
-        if (checksum != linklay[i].checksum || linklay[i].recv_bytes != pHead->App_len)
+        if (checksum != linklay[i].recv_frame.checksum || linklay[i].recv_bytes != pHead->App_Len)
         {
             linklay_proc_error(&linklay[i]);
             return;    
         }
 
-        if (pHead->macaddr[0] != mac_addr[0] || pHead->macaddr[1] != mac_addr[1] ||
-            pHead->macaddr[2] != mac_addr[2] || pHead->macaddr[3] != mac_addr[3])
+        if (pHead->mac_addr[0] != mac_addr[0] || pHead->mac_addr[1] != mac_addr[1] ||
+            pHead->mac_addr[2] != mac_addr[2] || pHead->mac_addr[3] != mac_addr[3])
         {
             linklay_porc_not_me(&linklay[i]);//may be need to route
             return;
@@ -189,27 +217,6 @@ void linklay_recv_process()
             return;    
         }
     }
-}
-
-void linklay_proc_error(PsLinklayCtrl *pCtrl)
-{
-	
-}
-
-void linklay_porc_not_me(PsLinklayCtrl *pCtrl)
-{
-	
-}
-
-void linklay_proc_normal_pkg(PsLinklayCtrl *pCtrl)
-{
-	linklay_set_datarecved(pCtrl->mac_type);
-}
-
-
-void linklay_proc_ctrl_pkg(PsLinklayCtrl *pCtrl)
-{
-	
 }
 
 void linklay_process()
@@ -227,20 +234,20 @@ void linklay_setmac(uchar mactype)
 }
 
 
-intu8 linklay_rx(int8u mac_type, Plinklay_Frame pFrame)
+int8u linklay_rx(int8u mac_type, Plinklay_Frame pFrame)
 {
     if (mac_type == MacPlc)
-        return plc_rx_bytes((uchar *)pframe);
-#if
+        return plc_rx_bytes((uchar *)pFrame);
+#ifdef W24G
     else if (mac_type == MacWireless_2_4G)
-        return wireless_2_4G_rx_byte((uchar *)pframe);
+        return wireless_2_4G_rx_byte((uchar *)pFrame);
 #endif
     return 0;
 }
 
-intu8 mac_rx_bytes()
+int8u mac_rx_bytes()
 {
-    intu8 len, i,tlen=0;
+    int8u len, i,tlen=0;
     for (i = MacPlc; i < MacTypeEnd; i++) {
         len = linklay_rx(i, &linklay[i].recv_frame);
         if (len) {
@@ -254,14 +261,14 @@ intu8 mac_rx_bytes()
     return tlen;    
 }
 
-intu8 mac_tx_bytes(int8u mac_type, ucahr *pdata, int8u num)
+int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num)
 {
     uchar realsend;
     
-    if (mac_type == MAC_TYPE_PLC)
+    if (mac_type == MacPlc)
         realsend = plc_tx_bytes(pdata, num);
 #ifdef W24G         
-    else if (mac_type == MAC_TYPE_2_4G)
+    else if (mac_type == MacWireless_2_4G)
         realsend = wireless_2_4G_tx_bytes(pdata, num);
 #endif    
     return realsend;    
