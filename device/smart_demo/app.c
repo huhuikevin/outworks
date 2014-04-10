@@ -2,12 +2,17 @@
 #include "soc_25xx.h"
 #include "type.h"
 #include "linklay.h"
+#include "tool.h"
 
 #define  R_LED PB5
 #define OpenLed R_LED=1
 #define CloseLed R_LED=0
 
 int8u app_data[MAX_APP_DATA_LEN];
+
+int8u app_recv_data();
+int8u app_send_data();
+void flush_led(int8u time);
 
 void app_process(void)
 {
@@ -29,7 +34,7 @@ void flush_led(int8u time)
 {
 	while(time--) {
 		OpenLed;
-		DelayMs(200)
+		DelayMs(200);
 		CloseLed;
 		DelayMs(200);
 	}
