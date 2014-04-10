@@ -4,6 +4,7 @@
 #include "system.h"
 
 void sys_app_process();
+void board_init();
 
 void RAM_Clr(void) //ramÈ«Çå
 {

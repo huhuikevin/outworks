@@ -1,6 +1,7 @@
 //单片机系统架构 main入口
 #include <hic.h>
 #include "type.h"
+#include "system.h"
 #include "tool.h"
 
 #ifdef SERIAL_INTF
@@ -12,6 +13,7 @@ void w2_4mac_driver_txrx(void);
 #endif    
 void plc_driver_txrx(void);
 void linklay_process(void);
+void app_process(void);
 
 void sys_app_process()
 {
