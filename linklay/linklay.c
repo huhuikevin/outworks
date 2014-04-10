@@ -42,11 +42,11 @@ typedef enum {
 
 
 
-uchar mac_addr[MAC_ADDR_LEN];
+section4 uchar mac_addr[MAC_ADDR_LEN];
 
-uchar send_seq = 0;
+section4 uchar send_seq ;
 
-uchar G_macType;
+section4 uchar G_macType;
 
 typedef struct
 {
@@ -92,7 +92,7 @@ typedef struct
 #define linklay_set_recv_empty(mac) do { linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_RECV_DATA);}while(0);
 #define linklay_has_recved_data(mac) (linklay[mac].frame_state & FRMAE_RECV_DATA)
 
-sLinklayCtrl linklay[MacTypeEnd];
+section6 sLinklayCtrl linklay[MacTypeEnd]@300;
 
 void linklay_send_process();
 void linklay_recv_process();

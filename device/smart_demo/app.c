@@ -8,7 +8,7 @@
 #define OpenLed R_LED=1
 #define CloseLed R_LED=0
 
-int8u app_data[MAX_APP_DATA_LEN];
+section4 int8u app_data[MAX_APP_DATA_LEN];
 
 int8u app_recv_data();
 int8u app_send_data();

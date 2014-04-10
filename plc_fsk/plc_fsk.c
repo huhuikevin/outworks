@@ -50,7 +50,7 @@ uchar  bit1_cnt,plc_byte_data,sync_word_l;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
 uchar  Plc_bit_rcv_cnt,Plc_byte_rcv_cnt,tr_rc_data_lgth,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
-section3 uchar Plc_recv[106];
+section3 uchar Plc_recv[106]@180;
 section3 uchar RSSIV,RSSIT; 
 section3 uchar SYM_off[8],SYCl_off[8];
 section13 uchar ZXDM_buf[40],RSSIV_buf[40];
@@ -61,33 +61,6 @@ section14 union SVR_LONG_B08 T16G1R_S;
 section13 uchar RSSIByte_buf[32],RSSIBit_buf[8];
 
 
-void iniSCI(void)
-{
-    TX1M=1; 
-    RX1M=1;
-}
-
-void Ini2571(void)
-{    
-    PAT=0X80;    
-    PBT=0X05;     //0x85      
-    PCT=0X10;  
-}       
-void RAM_Clr(void) //ramÈ«Çå
-{
-	__asm 
-  { 
-	CLR   IAAL;
-	CLR   IAAH;
-	CLR   IAD;
-	INC   IAAL,1;
-	JBS   PSW,C
-	GOTO  $-3;
-	INC   IAAH,1;
-	JBS   IAAH,4
-	GOTO  $-6;
-  } 
-}
 void IniT16G1(uchar Mode)
 {
     if(Mode==CCPMODE)		//²¶»ñ
@@ -136,14 +109,6 @@ void IniT16G2(uchar Mode)
     T16G2L=10;
     T16G2H=0; 
     T16G2CL=0x11;		//4:1 
-}
-void IO_Init(void)
-{
-    //GIE=1;
-    PBT=0x05;
-    PAT=0x80;
-    PCT=0x10;
-    STA=1;
 }
 
 void Ini_Plc_Rec(void)

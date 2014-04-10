@@ -54,7 +54,7 @@ uchar  bit1_cnt,plc_byte_data,sync_word_l;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
 uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,plc_data_len,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
-section3 uchar Plc_data[MaxPlcL];
+section3 uchar Plc_data[MaxPlcL]@180;
 section3 uchar RSSIV,RSSIT; 
 section3 uchar SYM_off[8],SYCl_off[8];
 section3 uchar Sync_data[3];
