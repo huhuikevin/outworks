@@ -9,6 +9,7 @@
 #include "type.h"
 #include "soc_25xx.h"
 #include "tool.h"
+#include "system.h"
 
 #define INSERT_0BIT_CNT 5
 #define  CCPMODE  0x02
@@ -27,8 +28,8 @@
 
 #define TX_Bit1()	            PLC_MOD|=0x01    //PLC_TXD
 #define TX_Bit0()               PLC_MOD&=0xfe
-#define MaxPlcL MAC_LAY_MAX_LEN
-#define Zero_Num 4
+#define MaxPlcL      64
+#define Zero_Num     4
 
 #define NORMAL 			0x03
 #define PnNum_Const 15
@@ -43,14 +44,14 @@ unsigned char Sync_bit1_cnt,TX_step;
 uchar section1  testbyte, tx_rx_byte;
 uchar section1  continue_1bit_cnt;//
 const uchar  T16g1RH_Time[6]={0x40,0x9c,0x93,0x2d,0xad,0x6e};
-uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
+uchar  Sum_Max,ZXDM,Sum_FXMax,FXDM;
 
 uchar BitData_T[27];//BitDataBak_T[16];	//同步时的位数据
 uchar Bit1Num_T[27];					//同步时收到1的个数（18T内）
-uchar SYM_offset,Sync_Step,Sync_M;
+uchar SYM_offset,Sync_Step;
 	  
 uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
-uchar  bit1_cnt,plc_byte_data,sync_word_l;
+uchar  bit1_cnt,plc_byte_data,sync_word_l, Sync_data_byte_cnt, Sync_data_bit_cnt;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
 uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,plc_data_len,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
@@ -1588,7 +1589,7 @@ void plc_recv_Proc(void)
 		    Plc_data_byte_cnt=0;
 		    continue_1bit_cnt = 0;
 		    Sync_data_byte_cnt = 0;
-		    Sync_data_bit_cnt = 8;
+		    Sync_data_bit_cnt = 0;
 		}else {
 		    Sync_Step=0;
 		    Plc_SyncBZ=0;
@@ -1749,7 +1750,7 @@ uchar plc_tx_bytes(uchar *pdata ,uchar num)
     return num;	
 }
 
-intu8 plc_rx_bytes(uchar *pdata)
+int8u plc_rx_bytes(uchar *pdata)
 {
     if(tx_rx_byte=='R')
     {
@@ -1818,7 +1819,7 @@ void plc_driver_txrx(void)
 }
 /************************************/
 /************************************/
-
+#if 0
 void main(void)
 { 
     int8u i;
@@ -1912,3 +1913,4 @@ void main(void)
      }while(1);
 }
 
+#endif
