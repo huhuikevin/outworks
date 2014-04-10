@@ -2,10 +2,18 @@
 #ifndef __LINKLAY__H_
 #define __LINKLAY__H_
 
-/* 上层拿这个buf进行数据发送 */
-uchar *linklay_get_send_buf(int8u mac_type);
-int8u linklay_set_send_len(int8u mac_type, int8u need_send);
-void *linklay_get_recv_buf(int8u mac_type, int8u *pLen);
-void *linklay_put_recv_buf(int8u mac_type);
+#define MAX_APP_DATA_LEN 32
+
+typedef enum {
+    MacPlc = 0,
+    MacWireless_2_4G,
+    MacTypeEnd;
+}uMacType;
+
+
+
+
+int8u linklay_send_data(int8u *pdata, int8u len, int8u mac);
+int8u linklay_recv_data(int8u pdata, int8u mac);
 
 #endif/* __LINKLAY__H_ */

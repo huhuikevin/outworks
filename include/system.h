@@ -3,16 +3,6 @@
 
 #include "soc_25xx.h"
 
-#define MAX_DATA_LEN 32
-
-typedef enum {
-    MacPlc = 0,
-    MacWireless_2_4G,
-    MacTypeEnd;
-}uMacType;
-
-
-
 #define NOP()		 __Asm  nop 
 #define SLEEP()          __Asm  IDLE
 #define watchdog()       __Asm  CWDT

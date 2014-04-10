@@ -62,62 +62,61 @@ typedef struct
 typedef struct  
 {
     sLinkLayHead head;
-	int8u App_data[MAX_DATA_LEN];
+	int8u App_data[MAX_APP_DATA_LEN];
 	int8u checksum;	//校验  
 }linklay_Frame, *Plinklay_Frame;
 
 typedef struct
 {
-    int8u mac_type;
-    int8u send_bytes;
-    int8u recv_bytes;
-    int8u send_seq;
-    int8u link_statmachine; 
+    int8u mac_type:2;
+    int8u send_bytes:6;
+    int8u recv_bytes:6;
+    int8u link_statmachine :2;
+    int8u send_seq:4;
+    int8u frame_state:4;
     int32u recv_overflov;
     linklay_Frame send_frame;
     linklay_Frame recv_frame;
 }sLinklayCtrl, *PsLinklayCtrl;
 
+#define FRMAE_SEND_DATA 0x1
+#define FRMAE_RECV_DATA 0x2
+
+#define linklay_set_sending(mac) do { linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_SEND_DATA;}while(0);
+#define linklay_set_sendready(mac) do { linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_SEND_DATA);}while(0);
+#define linklay_tx_is_sending(mac) (linklay[mac].frame_state & FRMAE_SEND_DATA)
+
+
+#define linklay_set_datarecved(mac) do { linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_RECV_DATA;}while(0);
+#define linklay_set_recv_empty(mac) do { linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_RECV_DATA);}while(0);
+#define linklay_has_recved_data(mac) (linklay[mac].frame_state & FRMAE_RECV_DATA)
+
 sLinklayCtrl linklay[MacTypeEnd];
 
 
-
-/* 上层拿这个buf进行数据发送 */
-uchar *linklay_get_send_buf(int8u mac_type)
+int8u linklay_send_data(int8u *pdata, int8u len, int8u mac)
 {
-    if (linklay[i].link_statmachine == LinkLayIdle
-        return (&linklay[mac_type].send_frame.App_data[0]);
-    else
-        return NULL;
+	linklay_send_process();
+	if (!linklay_tx_is_sending(mac)){
+		MMemcpy(&linklay[mac].send_frame.App_data[0], pdata, len);
+		linklay[mac].send_bytes = len;
+		linklay_set_sending(mac);
+		linklay_send_process();
+		return len;
+	}
+	return 0;
 }
 
-int8u linklay_set_send_len(int8u mac_type, int8u need_send)
+int8u linklay_recv_data(int8u pdata, int8u mac)
 {
-    if (linklay[i].link_statmachine == LinkLayIdle) {
-        linklay[mac_type].send_bytes = need_send;
-        return need_send;
-    }else
-        return 0;
-}
-
-void *linklay_get_recv_buf(int8u mac_type, int8u *pLen)
-{
-    if (linklay[mac_type].recv_bytes) {
-        return (&linklay[mac_type].recv_frame.App_data[0]);
-        *pLen = linklay[mac_type].recv_bytes;
+    int8u len = linklay[mac].recv_bytes;
+    if (linklay_has_recved_data(mac)) {
+        MMemcpy (pdata, &linklay[mac].recv_frame.App_data[0], len);
+        linklay_set_recv_empty(mac);
+	 return len; 
     }
-    else {
-        *pLen = 0;
-        return NULL;
-    }
+    return 0;
 }
-
-
-void *linklay_put_recv_buf(int8u mac_type)
-{
-    linklay[mac_type].recv_bytes = 0;
-}
-
 
 
 /* 上层已经把数据填写到 linklay_send_buf 中了 */
@@ -144,12 +143,13 @@ void linklay_send_process()
         
         linklay[i].checksum = CalChecksum((uchar *)pHead, pkglen);
     
-        sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen + sizoef(int8u));
+        sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen + sizeof(int8u));
         if (sended) {
-            linklay[i].send_bytes = 0;//clear the send_bytes, means send ok
-            linklay[i].link_statmachine = LinkLayIdle;
+            //linklay[i].send_bytes = 0;//clear the send_bytes, means send ok
+            //linklay[i].link_statmachine = LinkLayIdle;
+	     linklay_set_sendready(i);
         }else
-            linklay[i].link_statmachine = LinkLayTxPending;
+            linklay_set_sending(i);
     };
 }
 
@@ -164,7 +164,7 @@ void linklay_recv_process()
         if (linklay[i].recv_bytes == 0)//no recv data
             continue;
         
-        linklay[i].recv_bytes -= sizoef(int8u);//decc checksum len
+        linklay[i].recv_bytes -= sizeof(int8u);//decc checksum len
         pHead = &linklay[i].recv_frame.head;
         checksum = CalChecksum((uchar *)&pHead, linklay[i].recv_bytes);
         linklay[i].recv_bytes -= sizeof(sLinkLayHead);//dec the head len
@@ -191,11 +191,31 @@ void linklay_recv_process()
     }
 }
 
+void linklay_proc_error(PsLinklayCtrl *pCtrl)
+{
+	
+}
+
+void linklay_porc_not_me(PsLinklayCtrl *pCtrl)
+{
+	
+}
+
+void linklay_proc_normal_pkg(PsLinklayCtrl *pCtrl)
+{
+	linklay_set_datarecved(pCtrl->mac_type);
+}
+
+
+void linklay_proc_ctrl_pkg(PsLinklayCtrl *pCtrl)
+{
+	
+}
 
 void linklay_process()
 {
     if (mac_rx_bytes() != 0) {
-        linklay_recv_data();
+        //linklay_recv_data();
         linklay_recv_process();
     }
     linklay_send_process();
