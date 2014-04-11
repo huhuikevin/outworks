@@ -84,14 +84,14 @@ typedef struct
 do \
 { \
 	linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_SEND_DATA;\
-	linklay[i].send_statmachine = LinkSendTxing;\
+	linklay[mac].send_statmachine = LinkSendTxing;\
 }while(0);
 
 #define linklay_set_sendready(mac) \
 do \
-{
+{ \
 	linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_SEND_DATA);\
-	linklay[i].send_statmachine = LinkSendIdle;\
+	linklay[mac].send_statmachine = LinkSendIdle;\
 }while(0);
 
 #define linklay_tx_is_sending(mac) (linklay[mac].frame_state & FRMAE_SEND_DATA)

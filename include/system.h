@@ -15,6 +15,6 @@
 #define TICK_2_S (t) (t / SYSTEM_HZ)
 #define TICK_2_MS(t) (t<<1)
 
-#define MS_TO_TICK((ms)) ((ms)>>1)
+#define MS_TO_TICK(m) (m>>1)
 
 #endif /* __SYSTEM__H_ */

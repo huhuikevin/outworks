@@ -1,6 +1,5 @@
 #include "P111.h"
 #include "timer8n.h"
-#include "uart.h"
 
 section5 unsigned long global_timer;
 /*************************************
@@ -24,10 +23,10 @@ void timer8n_init(void) // timer 8n run as 2ms
 	T8NC=0x8e;	/*bit 2-0 :101 128 ·ÖÆµ ,, 20M / 2 = 10M / 128 = 80K */
 	T8N=96;
 	T8NIE = 0; //disable irq, use poll mode   
- 	global_timer=0
+ 	global_timer=0;
 }
 
-void Timetick()
+int32u Timetick(void)
 {
 	timer8N();
 	return global_timer;

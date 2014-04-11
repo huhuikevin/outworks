@@ -2,6 +2,7 @@
 #include <hic.h>
 #include "type.h"
 #include "system.h"
+#include "timer8n.h"
 
 void sys_app_process();
 void board_init();
