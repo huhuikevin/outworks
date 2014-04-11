@@ -32,14 +32,11 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #define get_seq(byte5) ((byte5>>4) & 0xf)
 
 typedef enum {
-    LinkLayIdle = 0,
-    LinkLayTxing,
-    LinkLayTxPending,
-    LinkLayTxFinish,
-    LinkLayWaitAck,
-    LinkLayRecvedAck,    
+    LinkSendIdle = 0,
+    LinkSendTxing,
+    LinkSendWaitAck,
+    LinkSendRecvedAck,    
 }uLinkLayStatMachine;
-
 
 
 section4 uchar mac_addr[MAC_ADDR_LEN];
@@ -72,7 +69,7 @@ typedef struct
     int8u mac_type:2;
     int8u send_bytes:6;
     int8u recv_bytes:6;
-    int8u link_statmachine :2;
+    int8u send_statmachine :2;
     int8u send_seq:4;
     int8u frame_state:4;
     int32u recv_overflow;
@@ -83,9 +80,22 @@ typedef struct
 #define FRMAE_SEND_DATA 0x1
 #define FRMAE_RECV_DATA 0x2
 
-#define linklay_set_sending(mac) do { linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_SEND_DATA;}while(0);
-#define linklay_set_sendready(mac) do { linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_SEND_DATA);}while(0);
+#define linklay_set_sending(mac) \
+do \
+{ \
+	linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_SEND_DATA;\
+	linklay[i].send_statmachine = LinkSendTxing;\
+}while(0);
+
+#define linklay_set_sendready(mac) \
+do \
+{
+	linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_SEND_DATA);\
+	linklay[i].send_statmachine = LinkSendIdle;\
+}while(0);
+
 #define linklay_tx_is_sending(mac) (linklay[mac].frame_state & FRMAE_SEND_DATA)
+
 
 
 #define linklay_set_datarecved(mac) do { linklay[mac].frame_state=linklay[mac].frame_state|FRMAE_RECV_DATA;}while(0);
@@ -153,7 +163,7 @@ void linklay_send_process()
         sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen + sizeof(int8u));
         if (sended) {
             //linklay[i].send_bytes = 0;//clear the send_bytes, means send ok
-            //linklay[i].link_statmachine = LinkLayIdle;
+            //linklay[i].send_statmachine = LinkLayIdle;
 	     linklay_set_sendready(i);
         }else
             linklay_set_sending(i);
