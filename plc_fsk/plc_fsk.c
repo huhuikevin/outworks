@@ -5,6 +5,7 @@
 #include "system.h"
 #include "soc_25xx.h"
 #include "tool.h"
+#incluee "debug.h"
 
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
@@ -1682,7 +1683,8 @@ BOOL plc_tx_idle()
 {
     if (Plc_Mode=='T')//NOT IN TX
         return FALSE;
-    
+    else
+	 return TRUE;    
 }
 
 int8u plc_tx_bytes(uchar *pdata ,uchar num)

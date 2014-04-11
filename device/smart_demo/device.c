@@ -2,6 +2,7 @@
 #include "type.h"
 #include "soc_25xx.h"
 #include "plc.h"
+#include "timer8n.h"
 
 void iniSCI(void)
 {
@@ -29,4 +30,5 @@ void board_init()
 {
     IO_Init();
     plc_init(); 
+    timer8n_init();
 }

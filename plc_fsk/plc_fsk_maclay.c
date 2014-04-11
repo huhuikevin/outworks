@@ -10,7 +10,7 @@
 #include "soc_25xx.h"
 #include "tool.h"
 #include "system.h"
-
+#include "debug.h"
 #define INSERT_0BIT_CNT 5
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
@@ -1716,11 +1716,13 @@ BOOL plc_tx_idle()
 {
     if (Plc_Mode=='T')//NOT IN TX
         return FALSE;
-    
+    else
+	 return TRUE;
 }
 
 uchar plc_tx_bytes(uchar *pdata ,uchar num)
 {  
+#ifndef DEBUGER_SINGAL
     if (FALSE == plc_tx_idle())
         return 0;
 	Plc_data[0]=0xaa;
@@ -1747,11 +1749,18 @@ uchar plc_tx_bytes(uchar *pdata ,uchar num)
     T16G1IF=0;
 	T16G1IE=1;
 
-    return num;	
+    return num;
+#else
+    Plc_data[0]=0xaa;
+    Plc_data[1]=num;
+    MMemcpy(&Plc_data[2],pdata,num);
+    return num;
+#endif
 }
 
 int8u plc_rx_bytes(uchar *pdata)
 {
+#ifndef DEBUGER_SINGAL
     if(tx_rx_byte=='R')
     {
         MMemcpy(pdata, Plc_data, Plc_data_byte_cnt);
@@ -1772,6 +1781,11 @@ int8u plc_rx_bytes(uchar *pdata)
         
         return  Plc_data_byte_cnt;     
     }
+#else
+    pdata[0] = 2;
+    pdata[1] = 100;
+    return 2;
+#endif
     return 0;
 }
 void plc_init(void)
