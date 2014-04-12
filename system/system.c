@@ -3,6 +3,7 @@
 #include "type.h"
 #include "system.h"
 #include "timer8n.h"
+#include "linklay.h"
 
 void sys_app_process();
 void board_init();
@@ -30,6 +31,7 @@ void main(void)
     board_init();//device 相关的文件中定义
     watchdog();
     timer8N();
+	linklay_init();
     do {
         watchdog();
         enable_irq();

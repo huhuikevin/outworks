@@ -54,6 +54,7 @@ typedef struct
 	int8u Seq : 4;		//发送序列号
 	int8u Anck : 1;				//应答
 	int8u Res : 3;		//保留
+	int8u checksum;	//校验  
 }sLinkLayHead, *PsLinkLayHead;
 
 
@@ -61,7 +62,6 @@ typedef struct
 {
     sLinkLayHead head;
 	int8u App_data[MAX_APP_DATA_LEN];
-	int8u checksum;	//校验  
 }linklay_Frame, *Plinklay_Frame;
 
 typedef struct
@@ -110,6 +110,12 @@ int8u mac_rx_bytes();
 int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num);
 
 
+void linklay_init()
+{
+	MMemSet(&linklay[0], 0, sizeof(sLinklayCtrl)*MacTypeEnd);
+	linklay[0].mac_type = MacPlc;
+	linklay[1].mac_type = MacWireless_2_4G;
+}
 
 int8u linklay_send_data(int8u *pdata, int8u len, int8u mac)
 {
@@ -158,9 +164,9 @@ void linklay_send_process()
         pHead->App_Len = linklay[i].send_bytes;
         pHead->Seq = linklay[i].send_seq;
         
-        linklay[i].send_frame.checksum = CalChecksum((uchar *)pHead, pkglen);
-    
-        sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen + sizeof(int8u));
+        pHead->checksum = CalChecksum((uchar *)pHead, sizeof(sLinkLayHead) - sizeof(int8u));
+    	pHead->checksum += CalChecksum((uchar *)(pHead + 1), pHead->App_Len);
+        sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen);
         if (sended) {
             //linklay[i].send_bytes = 0;//clear the send_bytes, means send ok
             //linklay[i].send_statmachine = LinkLayIdle;
@@ -202,11 +208,11 @@ void linklay_recv_process()
         if (linklay[i].recv_bytes == 0)//no recv data
             continue;
         
-        linklay[i].recv_bytes -= sizeof(int8u);//decc checksum len
         pHead = &linklay[i].recv_frame.head;
-        checksum = CalChecksum((uchar *)&pHead, linklay[i].recv_bytes);
+        checksum = CalChecksum((uchar *)pHead, sizeof(sLinkLayHead) - sizeof(int8u));
+		checksum += CalChecksum((uchar *)(pHead + 1), pHead->App_Len);
         linklay[i].recv_bytes -= sizeof(sLinkLayHead);//dec the head len
-        if (checksum != linklay[i].recv_frame.checksum || linklay[i].recv_bytes != pHead->App_Len)
+        if (checksum != pHead->checksum || linklay[i].recv_bytes != pHead->App_Len)
         {
             linklay_proc_error(&linklay[i]);
             return;    

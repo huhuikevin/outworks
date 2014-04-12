@@ -27,6 +27,7 @@ void app_process(void)
 			flush_led(app_data[1]);
 		app_send_data();
 	}
+   app_send_data();
 }
 
 

@@ -17,4 +17,7 @@
 
 #define MS_TO_TICK(m) (m>>1)
 
+#define SYNC_WORD 0x7e
+#define FRAME_START 0xaa
+
 #endif /* __SYSTEM__H_ */
