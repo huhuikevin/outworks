@@ -1,35 +1,31 @@
 //说明：FSK载波 过零发送模式
 //从 plcfsk_rx_v12z_hd.c 修改而来
-// 200bps
-/*
-0x7e 0x7e 0xaa data data.... 0x7e
-数据位中，连续有5个1的时候，插入一个0，接受的时候，连续5个1，丢掉后面的0
-*/
 #include <hic.h>
 #include "type.h"
+#include "system.h"
+#include "timer8n.h"
 #include "soc_25xx.h"
 #include "tool.h"
-#include "system.h"
 #include "debug.h"
-#define INSERT_0BIT_CNT 5
+
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
 #define  RH_Time  0X05
 #define  RL_Time  0X33
-#define  R_LED PB5		 
-#define  S_LED PC0  
+#define  R_LED PB7		 
+#define  S_LED PB7  
 #define	 STA     PB6
 #define  PLC_TXEN  PC1
 
-#define  PLC_TX   PLC_TXEN=1 //使能发送PA
-#define  PLC_RX   PLC_TXEN=0 //关闭发送PA
+#define  PLC_TX   PLC_TXEN=1
+#define  PLC_RX   PLC_TXEN=0
 
 #define  Sync_bit1_cnt_Max  0x1f
 
 #define TX_Bit1()	            PLC_MOD|=0x01    //PLC_TXD
 #define TX_Bit0()               PLC_MOD&=0xfe
-#define MaxPlcL      64
-#define Zero_Num     4
+#define MaxPlcL 100
+#define Zero_Num 4
 
 #define NORMAL 			0x03
 #define PnNum_Const 15
@@ -43,28 +39,28 @@ static volatile   section64  sbit  PLC_FSK_RXD      @ (unsigned) &PLC_MOD* 8 + 3
 unsigned char Sync_bit1_cnt,TX_step;
 uchar section1  testbyte, tx_rx_byte;
 const uchar  T16g1RH_Time[6]={0x40,0x9c,0x93,0x2d,0xad,0x6e};
-uchar  Sum_Max,ZXDM,Sum_FXMax,FXDM;
+uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
 uchar BitData_T[27];//BitDataBak_T[16];	//同步时的位数据
 uchar Bit1Num_T[27];					//同步时收到1的个数（18T内）
-uchar SYM_offset,Sync_Step;
+//uchar Plc_Rec_Bz,Plc_S1,Plc_Sll;
+uint SSC15;
+uchar SYM_offset,Sync_Step,Sync_M;
 	  
 uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
-uchar  bit1_cnt,plc_byte_data,sync_word_l, Sync_data_byte_cnt, Sync_data_bit_cnt;
+uchar  bit1_cnt,plc_byte_data,sync_word_l;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
-uchar  Plc_data_byte_cnt,plc_data_len,Plc_S,Plc_Mode,Plc_ZeroMode;
-section1 int16u  Plc_data_bit_cnt;
+uchar  Plc_bit_rcv_cnt,Plc_byte_rcv_cnt,tr_rc_data_lgth,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
-section3 uchar Plc_data[MaxPlcL]@180;
+section3 uchar Plc_recv[106]@180;
 section3 uchar RSSIV,RSSIT; 
 section3 uchar SYM_off[8],SYCl_off[8];
-section3 uchar Sync_data[3];
 section13 uchar ZXDM_buf[40],RSSIV_buf[40];
-section13 uchar RSSIByte_buf[32],RSSIBit_buf[8];
 
 section14 uchar Zero_cnt,Tx_timer;
 section14 union SVR_INT_B08 T16G1R_int[8],T16G1R_20ms[8],T16G1R_old,T16G1R_new,T16G1_TRStartint;//T16G1R1,T16G1R2,T16G1R3,T16G1R4,T16G1R5,T16G1R6;
 section14 union SVR_LONG_B08 T16G1R_S;
+section13 uchar RSSIByte_buf[32],RSSIBit_buf[8];
 
 
 void IniT16G1(uchar Mode)
@@ -116,7 +112,6 @@ void IniT16G2(uchar Mode)
     T16G2H=0; 
     T16G2CL=0x11;		//4:1 
 }
-
 
 void Ini_Plc_Rec(void)
 {
@@ -623,7 +618,7 @@ sbit Recv_Bit()
 *******21PN
 *******数据1扩频发送**********/
 
-void TX1_PN21(void)
+void TX1_PN15(void)
 { 
     TX_Bit1()      ;//1 		//多发1个无用的 0520
 	DelayBit();
@@ -699,7 +694,7 @@ void TX1_PN21(void)
 *******21PN   两位间发送间隔1332T
 *******数据0扩频发送**********/
 
-void TX0_PN21(void)
+void TX0_PN15(void)
 {   
     TX_Bit0()      ;//1    多发1BIT 0520
 	DelayBit();
@@ -771,86 +766,61 @@ void TX0_PN21(void)
 	DelayEndBit();//1303
 }
 //位间隔1998US
-void tx_normal_data(void)   /*发送正常数据*/
+void tr_nor_data(void)   /*发送正常数据*/
 {
-    Plc_data_bit_cnt--;   /*还应发送几位*/
-	if(Plc_data_bit_cnt==0)   /*此字节发送完*/
+    Plc_bit_rcv_cnt--;   /*还应发送几位*/
+	if(Plc_bit_rcv_cnt==0)   /*此字节发送完*/
 	{	
-        Plc_data_byte_cnt++;
+        Plc_byte_rcv_cnt++;
 	   	
-		Plc_data_bit_cnt=8;        /*应发送8位,先减一后发送,所以为9;*/
+		Plc_bit_rcv_cnt=8;        /*应发送8位,先减一后发送,所以为9;*/
 		if(t_nor_bit==1)
 		{
-            plc_byte_data=Plc_data[Plc_data_byte_cnt]; /*取要发送的数据,有0x09af*/
+            plc_byte_data=Plc_recv[Plc_byte_rcv_cnt]; /*取要发送的数据,有0x09af*/
 		        
-			if(Plc_data_byte_cnt==plc_data_len)   /*全部发送完*/
+			if(Plc_byte_rcv_cnt==tr_rc_data_lgth)   /*全部发送完*/
 			{
                 t_nor_bit=0;
 			   	t_end_bit=1;
 			   	S_LED=0;			//最后一位扩频位尚未发送
 			  	return;		
 			}
+		}
+		else
+		{
+            plc_byte_data=0xff;
+		    if(Plc_byte_rcv_cnt==3) 
+		    {
+                t_nor_bit=1;
+		        Plc_byte_rcv_cnt=0;
+		        plc_byte_data=Plc_recv[Plc_byte_rcv_cnt];
+		    }
 		}		
 	}
 	else
 	{
         plc_byte_data<<=1;	
 	}
-	if(plc_byte_data&0x80)
-	{
+	if(plc_byte_data&0x80) 
         Plc_Tx_Bit=1;		
-	}
-	else {
-        Plc_Tx_Bit=0;	
-    } 	   			
+	else
+        Plc_Tx_Bit=0;	 	   			
  }
-
-
-void tx_normal_data(void)   /*发送正常数据*/
-{
 	
-    
-	int8u plc_byte_cnt = Plc_data_bit_cnt>> 3;
-	int8u plc_offset_bit = Plc_data_bit_cnt% 8;
-
-	Plc_Tx_Bit= (Plc_data[plc_byte_cnt] >> plc_offset_bit) & 0x1;
-
-	if (plc_data_len <= (plc_byte_cnt + plc_offset_bit))
-	{
-		t_nor_bit=0;
-		t_end_bit=1;
-		S_LED=0;			
-		return;
-	}
-
-	Plc_data_bit_cnt++; /* 发了多少个bit */
- }
-
-
-//recv 0x7e,0x7e, 0xaa
-void rcv_sync_data(void)
-{
-	Sync_data_bit_cnt--;     	/*还剩几位*/
-	if(Sync_data_bit_cnt!=0)	/*未接收完一个字节*/
-		return;
-    Sync_data[Sync_data_byte_cnt]=plc_byte_data;  
-	Sync_data_byte_cnt++;
-	Sync_data_bit_cnt=8;
-}
    
 /*******************接收载波数据******************/
 void rcv_normal_data(void)   /*正常接收*/
 {	
-	Plc_data_bit_cnt--;     	/*还剩几位*/
-	if(Plc_data_bit_cnt!=0)	/*未接收完一个字节*/
+	Plc_bit_rcv_cnt--;     	/*还剩几位*/
+	if(Plc_bit_rcv_cnt!=0)	/*未接收完一个字节*/
 		return;
-	Plc_data_byte_cnt++;
-	Plc_data_bit_cnt=8;
-	Plc_data[Plc_data_byte_cnt-1]=plc_byte_data;              /*存储一个字节*/
 	
-	if(Plc_data_byte_cnt > MaxPlcL) 
-	{// plc_data_len=Plc_data[6]+8;
-        //if(Plc_data[1]>=MaxPlcL) 
+	Plc_bit_rcv_cnt=8;
+	Plc_recv[Plc_byte_rcv_cnt]=plc_byte_data;              /*存储一个字节*/
+	Plc_byte_rcv_cnt++;
+	if(Plc_byte_rcv_cnt==1) 
+	{// tr_rc_data_lgth=Plc_recv[6]+8;
+        if(Plc_recv[0]>=MaxPlcL) 
 	  	{
             T16G2IE=0;
   	        Plc_Mode=0;
@@ -865,15 +835,16 @@ void rcv_normal_data(void)   /*正常接收*/
 	}	
 	else	
 	{ 
-		if(Plc_data[Plc_data_byte_cnt-1] == 0x7e) /*收到结束sync，全部接收完*/
+		if((Plc_byte_rcv_cnt+1)>=Plc_recv[0])// Plc_recv[1])       /*如果全部接收完*/
 		{
             tx_rx_byte='R';
 			r_sync_bit=0;
 			plc_byte_data=0;									
 		}
 	}	/*还未接收完*/
-	//Plc_data_bit_cnt=8;
+	//Plc_bit_rcv_cnt=8;
 }
+
 
 void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
 {
@@ -1303,7 +1274,7 @@ void  Recv_25Pn(void)
     Bit1Num_T[25]=bit1_cnt;	//1的个数
     BitData_T[25]=Plc_S;	
     STA=1;	 
-    RSSIBit_buf[Plc_data_bit_cnt-1]=RSSIV;  	
+    RSSIBit_buf[Plc_bit_rcv_cnt-1]=RSSIV;  	
 }
 
 
@@ -1365,7 +1336,7 @@ void T16G1Int_Proc(void)
             TX_step=1; 
         }
     }
-    else if(Plc_Mode=='T')
+    else if(Plc_Mode=='T' && Plc_ZeroMode == 1)
     {
         if(TX_step!=2)
         {
@@ -1389,6 +1360,7 @@ void T16G1Int_Proc(void)
 	TX_step=0;
 	//	   Plc_Mode='R';
    }
+
 void T16G2Int_Proc(void)
 {
     T16G1_TRStartint.NumChar[1]=T16G1H;
@@ -1398,6 +1370,7 @@ void T16G2Int_Proc(void)
     {
         T16G1_TRStartint.NumChar[0]=T16G1L;
     }
+
     if(Plc_Mode=='T')
     {
     //        Uart_rec1Point=0;
@@ -1408,23 +1381,24 @@ void T16G2Int_Proc(void)
             if(t_end_bit==0)  //
 		    {
 		        if(Plc_Tx_Bit)
-		            TX0_PN21();
+		            TX0_PN15();
 		        else
-		            TX1_PN21();
+		            TX1_PN15();
 		        
-		        tx_normal_data(); 
+		        tr_nor_data(); 
 		        PLC_MOD=0x00;
 		        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-                T16G2RL=T16G1R_S.NumChar[0];		   
+                T16G2RL=T16G1R_S.NumChar[0];
+
 		    }
             if(t_end_bit)
             {
                 Plc_Mode=0;
            	
            	    t_nor_bit=0;
-           	    plc_data_len=0;
+           	    tr_rc_data_lgth=0;
 	 
-           	    R_LED=0;
+           	    R_LED=1;
                 //     	 T16G1IF=0;			//0802
                 T16G1IE=1;
                  
@@ -1446,7 +1420,8 @@ void T16G2Int_Proc(void)
         
 	        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
             T16G2RL=T16G1R_S.NumChar[0];
-            TX0_PN21();
+
+            TX0_PN15();
          
             Plc_Tx_Bit=1;
             delay14t();
@@ -1529,7 +1504,7 @@ void T16G2Int_Proc(void)
    	}
 }
 
-void Data_adjust_by_sync(void)
+void Sync_tiaozheng(void)
 {
     uchar ucB,ucC;
     for(ucB=0;ucB<SYCl_offset;ucB++) 				//约13335T
@@ -1546,55 +1521,59 @@ void Data_adjust_by_sync(void)
         }
     }
 }
-void plc_recv_Proc(void)
+void Recvplc_Proc(void)
 {
     //if(1/*Sync_Step=='E'*/)
-
-	Data_adjust_by_sync();	
+	Sync_tiaozheng();	
 	Sum_DM21_Sync(SYM_offset);
-
-    plc_byte_data<<=1;
-    if(Recv_Bit()) {
-        plc_byte_data|=0x01;
-        continue_1bit_cnt ++;
-    }else {
-        continue_1bit_cnt = 0;
-    }
-     
-	/* 等待 sync 字节 0x7e 0x7e 0xaa */
-	if (!r_sync_bit){
-	    ZXDM_buf[Sync_bit1_cnt]=ZXDM;
-        RSSIV_buf[Sync_bit1_cnt]=RSSIV;
-	    rcv_sync_data();
-	    Sync_bit1_cnt++;
-	}    
-
-    if(r_sync_bit==1)    //如果收到桢同步信号
+	sync_word_l<<=1;	
+	if(plc_byte_data&0x80)
+	{	
+	    sync_word_l|=0x01;
+	}
+	plc_byte_data<<=1;   
+    if(Recv_Bit())
+    plc_byte_data|=0x01;
+    ZXDM_buf[Sync_bit1_cnt]=ZXDM;
+    RSSIV_buf[Sync_bit1_cnt]=RSSIV;
+    if(r_sync_bit==1)    //如果收到桢同步信号09
 	{
 	    rcv_normal_data();    //
 	 	return;
 	}
-
-	if(Sync_data_byte_cnt == 3)
+	Sync_bit1_cnt++;
+	if(((plc_byte_data&0x01)==0)&&(sync_word_l!=0xff))
 	{
-	    if ((Sync_data[2]==0xaa)&&(Sync_data[1]==0x7e)) //Sync_Char
-	    {
-	        Plc_data_bit_cnt=8;  //收到位数标志置为9,除此位是先减一后接收外,其它都是先接收后减一,所以其它应为8;
-		    r_sync_bit=1;   //收到桢同步标志置1
+	    Sync_Step=0;
+		Plc_SyncBZ=0;
+		Plc_Mode=0;
+		R_LED=0;
+		 
+		IniT16G1(CCPMODE);
+		T16G1IE=1;
+		T16G2IE=0;
+		return;
+	}
+	if((plc_byte_data==0xaa)&&(sync_word_l==0xff)) //Sync_Char
+	{
+	    Plc_bit_rcv_cnt=8;  //收到位数标志置为9,除此位是先减一后接收外,其它都是先接收后减一,所以其它应为8;
+		r_sync_bit=1;   //收到桢同步标志置1
 									//	r_func1_bit=0;	//准备收第一个字节FUNC
-		    Plc_data_byte_cnt=0;
-		    Sync_data_byte_cnt = 0;
-		    Sync_data_bit_cnt = 0;
-		}else {
+		Plc_byte_rcv_cnt=0;
+		R_LED=1;
+	}
+	else {
+	    if(Sync_bit1_cnt>=Sync_bit1_cnt_Max)
+		{
 		    Sync_Step=0;
 		    Plc_SyncBZ=0;
 		    Plc_Mode=0;
 		    R_LED=0;
 		    IniT16G1(CCPMODE);
 		    T16G1IE=1;
-		    T16G2IE=0;		    
+		    T16G2IE=0;
 		}
-	}       
+	}        
 }
 
 void  INTS(void) interrupt 
@@ -1609,7 +1588,11 @@ void  INTS(void) interrupt
 	{  
 	    T16G1Int_Proc();
 	    T16G1IF=0;
-	}  
+	}
+	if ((T8NIF) && (T8NIE))
+	{
+		timer8N();
+	}
  }
  
 
@@ -1669,8 +1652,7 @@ void Sync1_Proc(void)
             Sync_bit1_cnt=0;            
             plc_byte_data=0;
             TX_step=1;
-            R_LED=1;
-            Sync_data_bit_cnt = 8;//recv the sync bytes 0x7e 0x7e 0xaa
+            //R_LED=1;
     	}
  	    else
   	    {
@@ -1706,59 +1688,53 @@ void Sync1_Proc(void)
     }
 }
 
-/**/
 BOOL plc_tx_idle()
 {
     if (Plc_Mode=='T')//NOT IN TX
         return FALSE;
     else
-	 return TRUE;
+	 return TRUE;    
 }
 
-uchar plc_tx_bytes(uchar *pdata ,uchar num)
+int8u plc_tx_bytes(uchar *pdata ,uchar num)
+
 {  
-#ifndef DEBUGER_SINGAL
     if (FALSE == plc_tx_idle())
         return 0;
-	Plc_data[0]=SYNC_WORD;
-	Plc_data[1]=SYNC_WORD;
-	Plc_data[2]=FRAME_START;
-	Plc_data[3]=num;
-	MMemcpy(&Plc_data[2],pdata,num);
-	plc_data_len=num+4;
+
+	Plc_recv[0]=0xaa;	
+    Plc_recv[1]=num+2;	
+	MMemcpy(&Plc_recv[2],pdata,num);
 	T16G2IE=0;
 	Ini_Plc_Tx();
     S_LED=1;
+	R_LED = 0;
 //	cal_chk_sum();
 	Plc_Mode='T';           
 	//tmr_init=0xff;
 	TX_step=0;
 	t_end_bit=0;
 	t_nor_bit=0;
-	Plc_data_bit_cnt=0;
-	Plc_data_byte_cnt=0;
-	continue_1bit_cnt = 0;
-			    		  
+	Pn15_cnt=0;
+	Plc_bit_rcv_cnt=8;
+	Plc_byte_rcv_cnt=0;
+	tr_rc_data_lgth=num+2;		//9
+	plc_byte_data=0xff;			    		  
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
     T16G1IF=0;
 	T16G1IE=1;
-
-    return num;
-#else
-    Plc_data[0]=0xaa;
-    Plc_data[1]=num;
-    MMemcpy(&Plc_data[2],pdata,num);
-    return num;
-#endif
+	//	T16G1H=5;
+	//	T16G1L=0;
+	return num;
 }
 
 int8u plc_rx_bytes(uchar *pdata)
 {
-#ifndef DEBUGER_SINGAL
     if(tx_rx_byte=='R')
     {
-        MMemcpy(pdata, Plc_data, Plc_data_byte_cnt);
+    	int8u len = Plc_byte_rcv_cnt-1;
+        MMemcpy(pdata, &Plc_recv[1], len);
 
         Plc_Mode=0;
         IniT16G1(CCPMODE);
@@ -1766,6 +1742,7 @@ int8u plc_rx_bytes(uchar *pdata)
         tx_rx_byte=0;
         Plc_SyncBZ=0;
 	    Sync_Step=0;
+		Plc_byte_rcv_cnt = 0;
 	    T16G2IE=0;
   	  
   	    TX_step=0;
@@ -1774,15 +1751,11 @@ int8u plc_rx_bytes(uchar *pdata)
   	    T16G1IE=1;
         S_LED=0;        
         
-        return  Plc_data_byte_cnt;     
+        return  len;     
     }
-#else
-    pdata[0] = 2;
-    pdata[1] = 100;
-    return 2;
-#endif
     return 0;
 }
+
 void plc_init(void)
 {
     PLC_RX;
@@ -1802,7 +1775,8 @@ void plc_init(void)
     IniT16G1(CCPMODE);
     T16G1IF=0;
     T16G1IE=1;
-    continue_1bit_cnt = 0;         
+	Plc_Mode = 0;
+	Plc_ZeroMode = 0;
 }
 
 void plc_driver_txrx(void)
@@ -1814,7 +1788,7 @@ void plc_driver_txrx(void)
         if(Plc_Mode=='R')
         {       
             if(Sync_Step=='E')
-                plc_recv_Proc();
+                Recvplc_Proc();
         }
         else
         {
@@ -1826,6 +1800,7 @@ void plc_driver_txrx(void)
         Rec_Zero_bz=0;
     }    
 }
+
 /************************************/
 /************************************/
 #if 0
@@ -1869,12 +1844,11 @@ void main(void)
     IniT16G1(CCPMODE);
     T16G1IF=0;
     T16G1IE=1;
-    continue_1bit_cnt = 0;
     //  PLC_MOD=0x59;		//关接收
     // INTG=0x84;
     do
     {
-        ei(); 
+        enable_irq(); 
         watchdog();
 
         if(Rec_Zero_bz)
@@ -1882,7 +1856,8 @@ void main(void)
             if(Plc_Mode=='R')
     	    {       
                 if(Sync_Step=='E')
-    	            plc_recv_Proc();
+    	            Recvplc_Proc();
+    	  
     	    }
     	    else
     	    {
@@ -1898,9 +1873,7 @@ void main(void)
             //Led_Con();
             Plc_Mode=0;
             IniT16G1(CCPMODE);
-            //全部接受ok，处理, call the linklay
-            linklay_recv_data(Plc_data, Plc_data_byte_cnt);
-            //MMemcpy(app_data, Plc_data, MaxPlcL);
+            //全部接受ok，处理
 	        r_sync_bit=0;
             tx_rx_byte=0;
             Plc_SyncBZ=0;
@@ -1921,5 +1894,4 @@ void main(void)
 	  
      }while(1);
 }
-
 #endif
