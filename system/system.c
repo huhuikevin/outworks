@@ -30,12 +30,12 @@ void main(void)
     RAM_Clr();
     board_init();//device 相关的文件中定义
     watchdog();
-    timer8N();
+    //timer8N();
 	linklay_init();
     do {
         watchdog();
         enable_irq();
-	 timer8N();
+	 //timer8N();
         sys_app_process();
     }while(1);
 }

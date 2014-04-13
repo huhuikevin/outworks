@@ -3,6 +3,7 @@
 #include <hic.h>
 #include "type.h"
 #include "system.h"
+#include "timer8n.h"
 #include "soc_25xx.h"
 #include "tool.h"
 #include "debug.h"
@@ -1587,7 +1588,11 @@ void  INTS(void) interrupt
 	{  
 	    T16G1Int_Proc();
 	    T16G1IF=0;
-	}  
+	}
+	if ((T8NIF) && (T8NIE))
+	{
+		timer8N();
+	}
  }
  
 
