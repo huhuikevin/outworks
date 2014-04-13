@@ -38,7 +38,26 @@ static volatile   section64  sbit  PLC_FSK_RXD      @ (unsigned) &PLC_MOD* 8 + 3
 
 unsigned char Sync_bit1_cnt,TX_step;
 uchar section1  testbyte, tx_rx_byte;
-const uchar  T16g1RH_Time[6]={0x40,0x9c,0x93,0x2d,0xad,0x6e};
+                               /* 8ms*/  /* 6.7ms*/
+const uchar  T16g1RH_Time[6]={0x40,0x9c,0xdc,0x82,0xad,0x6e};
+const uchar  T3_53ms_RH = 0x44;
+const uchar  T3_53ms_RL = 0xf2;
+const uchar  T6_47ms_RH = 0x7e;
+const uchar  T6_47ms_RL = 0x5e;
+uchar section1 trans_step;
+
+#define trans_step_next()\
+do {\
+	if (trans_step == 0){ \
+		T16G2RH = T3_53ms_RH;\
+		T16G2RL = T3_53ms_RL;\
+	}else{\
+		T16G2RH = T6_47ms_RH;\
+		T16G2RL = T6_47ms_RL;\
+	}\
+	trans_step ^= 1;\
+}while(0);
+
 uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
 uchar BitData_T[27];//BitDataBak_T[16];	//同步时的位数据
@@ -94,7 +113,7 @@ void IniT16G2(uchar Mode)
     case 2:
         // T16G1RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
         // T16G1RL=T16G1R_S.NumChar[0];
-        T16G2RH=T16g1RH_Time[3];		//过零后ms发
+        T16G2RH=T16g1RH_Time[3];		//过零后6.7ms发
         T16G2RL=T16g1RH_Time[2];
         break;
     case 3:
@@ -618,7 +637,7 @@ sbit Recv_Bit()
 *******21PN
 *******数据1扩频发送**********/
 
-void TX1_PN15(void)
+void TX1_PN21(void)
 { 
     TX_Bit1()      ;//1 		//多发1个无用的 0520
 	DelayBit();
@@ -694,7 +713,7 @@ void TX1_PN15(void)
 *******21PN   两位间发送间隔1332T
 *******数据0扩频发送**********/
 
-void TX0_PN15(void)
+void TX0_PN21(void)
 {   
     TX_Bit0()      ;//1    多发1BIT 0520
 	DelayBit();
@@ -828,6 +847,7 @@ void rcv_normal_data(void)   /*正常接收*/
   	        Sync_Step=0;
   	        r_sync_bit=0;
   	        Plc_SyncBZ=0;
+			trans_step= 0;
             T16G1IF=0;
   	        T16G1IE=1;
             return;
@@ -839,7 +859,8 @@ void rcv_normal_data(void)   /*正常接收*/
 		{
             tx_rx_byte='R';
 			r_sync_bit=0;
-			plc_byte_data=0;									
+			plc_byte_data=0;
+			trans_step= 0;
 		}
 	}	/*还未接收完*/
 	//Plc_bit_rcv_cnt=8;
@@ -1330,7 +1351,7 @@ void T16G1Int_Proc(void)
     {  
         if(Plc_ZeroMode==1)
         {      	
-            IniT16G2(1);
+            IniT16G2(2);
             T16G2IF=0;
             T16G2IE=1;
             TX_step=1; 
@@ -1340,7 +1361,7 @@ void T16G1Int_Proc(void)
     {
         if(TX_step!=2)
         {
-            IniT16G2(1);
+            IniT16G2(2);
             T16G2IF=0;
             T16G2IE=1;
             TX_step=1; 
@@ -1380,16 +1401,16 @@ void T16G2Int_Proc(void)
             PLC_TX;
             if(t_end_bit==0)  //
 		    {
+		    	trans_step_next();
 		        if(Plc_Tx_Bit)
-		            TX0_PN15();
+		            TX0_PN21();
 		        else
-		            TX1_PN15();
+		            TX1_PN21();
 		        
 		        tr_nor_data(); 
 		        PLC_MOD=0x00;
-		        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-                T16G2RL=T16G1R_S.NumChar[0];
-
+		        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
+                //T16G2RL=T16G1R_S.NumChar[0];
 		    }
             if(t_end_bit)
             {
@@ -1397,7 +1418,7 @@ void T16G2Int_Proc(void)
            	
            	    t_nor_bit=0;
            	    tr_rc_data_lgth=0;
-	 
+	 			trans_step = 0;
            	    R_LED=1;
                 //     	 T16G1IF=0;			//0802
                 T16G1IE=1;
@@ -1418,10 +1439,10 @@ void T16G2Int_Proc(void)
             //  PLC_RW=0x00;
             PLC_TX;
         
-	        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-            T16G2RL=T16G1R_S.NumChar[0];
-
-            TX0_PN15();
+	        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
+            //T16G2RL=T16G1R_S.NumChar[0];
+			trans_step_next();
+            TX0_PN21();
          
             Plc_Tx_Bit=1;
             delay14t();
@@ -1436,6 +1457,7 @@ void T16G2Int_Proc(void)
     else  if(Plc_Mode=='R')
     {
         Rec_Zero_bz=1; 
+		trans_step_next();
         if(TX_step==2)
         {
             PLC_MOD=0x59;
@@ -1458,16 +1480,17 @@ void T16G2Int_Proc(void)
             //	  PLC_MOD=0x59;
             //   T16G1CL=0x21;		//
         }
-        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-        T16G2RL=T16G1R_S.NumChar[0];
+        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
+        //T16G2RL=T16G1R_S.NumChar[0];
     }
     else  if(Plc_Mode==0)
     {     
         PLC_MOD=0x59;
+		trans_step_next();
         //   PLC_RX;
         Recv_25Pn(); 
-        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-        T16G2RL=T16G1R_S.NumChar[0];
+        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
+        //T16G2RL=T16G1R_S.NumChar[0];
          
         PLC_MOD=0x00;    //0720
         Plc_Mode='F';  
@@ -1484,6 +1507,7 @@ void T16G2Int_Proc(void)
        
 	    //  T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
         //  T16G2RL=T16G1R_S.NumChar[0];
+        trans_step_next();
         Recv_25Pn(); 
         PLC_MOD=0x00;		//0720
         Plc_Mode='F';     
@@ -1548,7 +1572,7 @@ void Recvplc_Proc(void)
 		Plc_SyncBZ=0;
 		Plc_Mode=0;
 		R_LED=0;
-		 
+		trans_step= 0;
 		IniT16G1(CCPMODE);
 		T16G1IE=1;
 		T16G2IE=0;
@@ -1568,6 +1592,7 @@ void Recvplc_Proc(void)
 		    Sync_Step=0;
 		    Plc_SyncBZ=0;
 		    Plc_Mode=0;
+			trans_step = 0;
 		    R_LED=0;
 		    IniT16G1(CCPMODE);
 		    T16G1IE=1;
@@ -1661,6 +1686,7 @@ void Sync1_Proc(void)
   	        TX_step=0;
   	        Sync_Step=0;
   	        Plc_SyncBZ=0;
+			trans_step = 0;
             T16G1IF=0;
   	        T16G1IE=1;
   	        // IniT16G1(CCPMODE);
@@ -1681,6 +1707,7 @@ void Sync1_Proc(void)
             TX_step=0;
   	        Sync_Step=0;
   	        Plc_SyncBZ=0;
+			trans_step= 0;
 	        T16G1IF=0;
   	        T16G1IE=1;
   	        //  IniT16G1(CCPMODE);
@@ -1719,7 +1746,8 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
 	Plc_bit_rcv_cnt=8;
 	Plc_byte_rcv_cnt=0;
 	tr_rc_data_lgth=num+2;		//9
-	plc_byte_data=0xff;			    		  
+	plc_byte_data=0xff;
+	trans_step = 0;
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
     T16G1IF=0;
@@ -1777,6 +1805,7 @@ void plc_init(void)
     T16G1IE=1;
 	Plc_Mode = 0;
 	Plc_ZeroMode = 0;
+	trans_step= 0;
 }
 
 void plc_driver_txrx(void)
