@@ -13,7 +13,7 @@ typedef enum {
 
 void linklay_init();
 int8u linklay_send_data(int8u *pdata, int8u len, int8u mac);
-int8u linklay_recv_data(int8u pdata, int8u mac);
+int8u linklay_recv_data(int8u *pdata, int8u mac);
 
 #endif/* __LINKLAY__H_ */
 

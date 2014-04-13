@@ -5,14 +5,14 @@
 #include "system.h"
 #include "soc_25xx.h"
 #include "tool.h"
-#incluee "debug.h"
+#include "debug.h"
 
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
 #define  RH_Time  0X05
 #define  RL_Time  0X33
-#define  R_LED PB5		 
-#define  S_LED PC0  
+#define  R_LED PB7		 
+#define  S_LED PB7  
 #define	 STA     PB6
 #define  PLC_TXEN  PC1
 
@@ -813,13 +813,13 @@ void rcv_normal_data(void)   /*正常接收*/
 	Plc_bit_rcv_cnt--;     	/*还剩几位*/
 	if(Plc_bit_rcv_cnt!=0)	/*未接收完一个字节*/
 		return;
-	Plc_byte_rcv_cnt++;
+	
 	Plc_bit_rcv_cnt=8;
 	Plc_recv[Plc_byte_rcv_cnt]=plc_byte_data;              /*存储一个字节*/
-	
+	Plc_byte_rcv_cnt++;
 	if(Plc_byte_rcv_cnt==1) 
 	{// tr_rc_data_lgth=Plc_recv[6]+8;
-        if(Plc_recv[1]>=MaxPlcL) 
+        if(Plc_recv[0]>=MaxPlcL) 
 	  	{
             T16G2IE=0;
   	        Plc_Mode=0;
@@ -834,7 +834,7 @@ void rcv_normal_data(void)   /*正常接收*/
 	}	
 	else	
 	{ 
-		if((Plc_byte_rcv_cnt+1)>=Plc_recv[1])// Plc_recv[1])       /*如果全部接收完*/
+		if((Plc_byte_rcv_cnt+1)>=Plc_recv[0])// Plc_recv[1])       /*如果全部接收完*/
 		{
             tx_rx_byte='R';
 			r_sync_bit=0;
@@ -1335,7 +1335,7 @@ void T16G1Int_Proc(void)
             TX_step=1; 
         }
     }
-    else if(Plc_Mode=='T')
+    else if(Plc_Mode=='T' && Plc_ZeroMode == 1)
     {
         if(TX_step!=2)
         {
@@ -1359,6 +1359,7 @@ void T16G1Int_Proc(void)
 	TX_step=0;
 	//	   Plc_Mode='R';
    }
+
 void T16G2Int_Proc(void)
 {
     T16G1_TRStartint.NumChar[1]=T16G1H;
@@ -1368,6 +1369,7 @@ void T16G2Int_Proc(void)
     {
         T16G1_TRStartint.NumChar[0]=T16G1L;
     }
+
     if(Plc_Mode=='T')
     {
     //        Uart_rec1Point=0;
@@ -1385,8 +1387,8 @@ void T16G2Int_Proc(void)
 		        tr_nor_data(); 
 		        PLC_MOD=0x00;
 		        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-              T16G2RL=T16G1R_S.NumChar[0];
-		   
+                T16G2RL=T16G1R_S.NumChar[0];
+
 		    }
             if(t_end_bit)
             {
@@ -1395,7 +1397,7 @@ void T16G2Int_Proc(void)
            	    t_nor_bit=0;
            	    tr_rc_data_lgth=0;
 	 
-           	    R_LED=0;
+           	    R_LED=1;
                 //     	 T16G1IF=0;			//0802
                 T16G1IE=1;
                  
@@ -1417,6 +1419,7 @@ void T16G2Int_Proc(void)
         
 	        T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
             T16G2RL=T16G1R_S.NumChar[0];
+
             TX0_PN15();
          
             Plc_Tx_Bit=1;
@@ -1556,6 +1559,7 @@ void Recvplc_Proc(void)
 		r_sync_bit=1;   //收到桢同步标志置1
 									//	r_func1_bit=0;	//准备收第一个字节FUNC
 		Plc_byte_rcv_cnt=0;
+		R_LED=1;
 	}
 	else {
 	    if(Sync_bit1_cnt>=Sync_bit1_cnt_Max)
@@ -1643,7 +1647,7 @@ void Sync1_Proc(void)
             Sync_bit1_cnt=0;            
             plc_byte_data=0;
             TX_step=1;
-            R_LED=1;
+            //R_LED=1;
     	}
  	    else
   	    {
@@ -1699,6 +1703,7 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
 	T16G2IE=0;
 	Ini_Plc_Tx();
     S_LED=1;
+	R_LED = 0;
 //	cal_chk_sum();
 	Plc_Mode='T';           
 	//tmr_init=0xff;
@@ -1723,8 +1728,8 @@ int8u plc_rx_bytes(uchar *pdata)
 {
     if(tx_rx_byte=='R')
     {
-    	int8u len = Plc_byte_rcv_cnt;
-        MMemcpy(pdata, Plc_recv, len);
+    	int8u len = Plc_byte_rcv_cnt-1;
+        MMemcpy(pdata, &Plc_recv[1], len);
 
         Plc_Mode=0;
         IniT16G1(CCPMODE);
@@ -1764,7 +1769,9 @@ void plc_init(void)
     T16G2CL=0x10;		//4:1 
     IniT16G1(CCPMODE);
     T16G1IF=0;
-    T16G1IE=1;         
+    T16G1IE=1;
+	Plc_Mode = 0;
+	Plc_ZeroMode = 0;
 }
 
 void plc_driver_txrx(void)

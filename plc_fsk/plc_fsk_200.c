@@ -1,6 +1,6 @@
 //说明：FSK载波 过零发送模式
 //从 plcfsk_rx_v12z_hd.c 修改而来
-
+// 200bps
 /*
 0x7e 0x7e 0xaa data data.... 0x7e
 数据位中，连续有5个1的时候，插入一个0，接受的时候，连续5个1，丢掉后面的0
@@ -11,7 +11,6 @@
 #include "tool.h"
 #include "system.h"
 #include "debug.h"
-
 #define INSERT_0BIT_CNT 5
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
@@ -43,7 +42,6 @@ static volatile   section64  sbit  PLC_FSK_RXD      @ (unsigned) &PLC_MOD* 8 + 3
 
 unsigned char Sync_bit1_cnt,TX_step;
 uchar section1  testbyte, tx_rx_byte;
-uchar section1  continue_1bit_cnt;//
 const uchar  T16g1RH_Time[6]={0x40,0x9c,0x93,0x2d,0xad,0x6e};
 uchar  Sum_Max,ZXDM,Sum_FXMax,FXDM;
 
@@ -54,7 +52,8 @@ uchar SYM_offset,Sync_Step;
 uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
 uchar  bit1_cnt,plc_byte_data,sync_word_l, Sync_data_byte_cnt, Sync_data_bit_cnt;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
-uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,plc_data_len,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
+uchar  Plc_data_byte_cnt,plc_data_len,Plc_S,Plc_Mode,Plc_ZeroMode;
+section1 int16u  Plc_data_bit_cnt;
 
 section3 uchar Plc_data[MaxPlcL]@180;
 section3 uchar RSSIV,RSSIT; 
@@ -774,15 +773,6 @@ void TX0_PN21(void)
 //位间隔1998US
 void tx_normal_data(void)   /*发送正常数据*/
 {
-    /* 如果发送的是正常的数据，而且有连续5个1，插入一个0*/
-    if (t_nor_bit)
-    {
-        if (continue_1bit_cnt == INSERT_0BIT_CNT){
-            continue_1bit_cnt = 0; 
-            Plc_Tx_Bit = 0;
-            return;   
-        }
-    }
     Plc_data_bit_cnt--;   /*还应发送几位*/
 	if(Plc_data_bit_cnt==0)   /*此字节发送完*/
 	{	
@@ -800,16 +790,6 @@ void tx_normal_data(void)   /*发送正常数据*/
 			   	S_LED=0;			//最后一位扩频位尚未发送
 			  	return;		
 			}
-		}
-		else
-		{
-            plc_byte_data=0x7e;
-		    if(Plc_data_byte_cnt==2) 
-		    {
-                t_nor_bit=1;
-		        Plc_data_byte_cnt=0;
-		        plc_byte_data=Plc_data[Plc_data_byte_cnt];
-		    }
 		}		
 	}
 	else
@@ -818,14 +798,35 @@ void tx_normal_data(void)   /*发送正常数据*/
 	}
 	if(plc_byte_data&0x80)
 	{
-        Plc_Tx_Bit=1;
-        continue_1bit_cnt ++;		
+        Plc_Tx_Bit=1;		
 	}
 	else {
         Plc_Tx_Bit=0;	
-        continue_1bit_cnt = 0;
     } 	   			
  }
+
+
+void tx_normal_data(void)   /*发送正常数据*/
+{
+	
+    
+	int8u plc_byte_cnt = Plc_data_bit_cnt>> 3;
+	int8u plc_offset_bit = Plc_data_bit_cnt% 8;
+
+	Plc_Tx_Bit= (Plc_data[plc_byte_cnt] >> plc_offset_bit) & 0x1;
+
+	if (plc_data_len <= (plc_byte_cnt + plc_offset_bit))
+	{
+		t_nor_bit=0;
+		t_end_bit=1;
+		S_LED=0;			
+		return;
+	}
+
+	Plc_data_bit_cnt++; /* 发了多少个bit */
+ }
+
+
 //recv 0x7e,0x7e, 0xaa
 void rcv_sync_data(void)
 {
@@ -1549,12 +1550,6 @@ void plc_recv_Proc(void)
 {
     //if(1/*Sync_Step=='E'*/)
 
-	if (r_sync_bit) {/* 接受正常数据，连续5个1后，丢掉后面的一个0*/
-	    if (continue_1bit_cnt == INSERT_0BIT_CNT){
-	        continue_1bit_cnt = 0;
-	        return;
-	    }
-	}
 	Data_adjust_by_sync();	
 	Sum_DM21_Sync(SYM_offset);
 
@@ -1588,7 +1583,6 @@ void plc_recv_Proc(void)
 		    r_sync_bit=1;   //收到桢同步标志置1
 									//	r_func1_bit=0;	//准备收第一个字节FUNC
 		    Plc_data_byte_cnt=0;
-		    continue_1bit_cnt = 0;
 		    Sync_data_byte_cnt = 0;
 		    Sync_data_bit_cnt = 0;
 		}else {
@@ -1723,43 +1717,48 @@ BOOL plc_tx_idle()
 
 uchar plc_tx_bytes(uchar *pdata ,uchar num)
 {  
-
-   if (FALSE == plc_tx_idle())
+#ifndef DEBUGER_SINGAL
+    if (FALSE == plc_tx_idle())
         return 0;
-	Plc_data[0]=0xaa;
-	Plc_data[1]=num;
+	Plc_data[0]=SYNC_WORD;
+	Plc_data[1]=SYNC_WORD;
+	Plc_data[2]=FRAME_START;
+	Plc_data[3]=num;
 	MMemcpy(&Plc_data[2],pdata,num);
-	plc_data_len=num+2;
-   Plc_data_byte_cnt = num;
-	plc_byte_data=0x7e;	//先发两个0x7e，用来同步
+	plc_data_len=num+4;
 	T16G2IE=0;
 	Ini_Plc_Tx();
     S_LED=1;
 //	cal_chk_sum();
-	//Plc_Mode='T';           
+	Plc_Mode='T';           
 	//tmr_init=0xff;
 	TX_step=0;
 	t_end_bit=0;
 	t_nor_bit=0;
-	Pn15_cnt=0;
-	Plc_data_bit_cnt=8;
+	Plc_data_bit_cnt=0;
 	Plc_data_byte_cnt=0;
 	continue_1bit_cnt = 0;
-   tx_rx_byte='R';
+			    		  
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
     T16G1IF=0;
 	T16G1IE=1;
-Plc_data_byte_cnt = num;
-    return num;
 
+    return num;
+#else
+    Plc_data[0]=0xaa;
+    Plc_data[1]=num;
+    MMemcpy(&Plc_data[2],pdata,num);
+    return num;
+#endif
 }
 
 int8u plc_rx_bytes(uchar *pdata)
 {
+#ifndef DEBUGER_SINGAL
     if(tx_rx_byte=='R')
     {
-        MMemcpy(pdata, &Plc_data[2], Plc_data_byte_cnt);
+        MMemcpy(pdata, Plc_data, Plc_data_byte_cnt);
 
         Plc_Mode=0;
         IniT16G1(CCPMODE);
@@ -1777,7 +1776,11 @@ int8u plc_rx_bytes(uchar *pdata)
         
         return  Plc_data_byte_cnt;     
     }
-
+#else
+    pdata[0] = 2;
+    pdata[1] = 100;
+    return 2;
+#endif
     return 0;
 }
 void plc_init(void)

@@ -130,7 +130,7 @@ int8u linklay_send_data(int8u *pdata, int8u len, int8u mac)
 	return 0;
 }
 
-int8u linklay_recv_data(int8u pdata, int8u mac)
+int8u linklay_recv_data(int8u *pdata, int8u mac)
 {
     int8u len = linklay[mac].recv_bytes;
     if (linklay_has_recved_data(mac)) {
@@ -165,7 +165,7 @@ void linklay_send_process()
         pHead->Seq = linklay[i].send_seq;
         
         pHead->checksum = CalChecksum((uchar *)pHead, sizeof(sLinkLayHead) - sizeof(int8u));
-    	pHead->checksum += CalChecksum((uchar *)(pHead + 1), pHead->App_Len);
+    	  pHead->checksum += CalChecksum((uchar *)(pHead + 1), pHead->App_Len);
         sended = mac_tx_bytes(linklay[i].mac_type, (uchar *)pHead, pkglen);
         if (sended) {
             //linklay[i].send_bytes = 0;//clear the send_bytes, means send ok

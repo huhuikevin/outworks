@@ -21,6 +21,9 @@ void Ini2571(void)
 void IO_Init(void)
 {
     //GIE=1;
+    PB5 = 0;
+	PB6 = 0;
+	PB7 = 0;
     PBT=0x05;
     PAT=0x80;
     PCT=0x10;
