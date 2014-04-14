@@ -4,5 +4,8 @@
 
 #define DEBUGER_SINGAL 1
 
+//#define SENDER 1
+
+
 #endif/* __DEBUG__H_ */
 
