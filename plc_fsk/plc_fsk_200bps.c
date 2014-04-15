@@ -2032,10 +2032,6 @@ void  INTS(void) interrupt
 	    T16G1Int_Proc();
 	    T16G1IF=0;
 	}
-	if ((T8NIF) && (T8NIE))
-	{
-		timer8N();
-	}
  }
  
 
