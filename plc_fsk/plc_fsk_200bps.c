@@ -74,13 +74,14 @@ uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
 section20 uchar BitData_T[128]@0xa00;//BitDataBak_T[16];	//同步时的位数据
 section21 uchar Bit1Num_T[128]@0xa80;					//同步时收到1的个数（18T内）
-//uchar Plc_Rec_Bz,Plc_S1,Plc_Sll;
-uint SSC15;
-uchar SYM_offset,Sync_Step,Sync_M;
+
+uchar SYM_offset,Sync_Step,SYM_offset2;
 	  
-uchar  SYCl_offset,SYMFX_offset,SYClFX_offset;
+uchar  SYCl_offset,SYMFX_offset;
+uchar  SYCl_offset2;
 uchar  bit1_cnt,plc_byte_data,sync_word_l;
-sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_Tx_Bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
+sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
+sbit   Plc_Tx_Bit,Plc_Tx_first_Bit,Plc_Tx_Second_Bit;
 uchar  Plc_bit_rcv_cnt,Plc_byte_rcv_cnt,tr_rc_data_lgth,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
 section3 uchar Plc_recv[106]@180;
@@ -1828,25 +1829,27 @@ void T16G2Int_Proc(void)
             if(t_end_bit==0)  //
 		    {
 		    	trans_step_next();
-		        if(Plc_Tx_Bit)
+		        if(Plc_Tx_first_Bit)
 		            TX0_PN21();
 		        else
 		            TX1_PN21();
 		        
-		        tr_nor_data(); 
 				DelayBit();
 				DelayBit();
 				DelayBit();
 				//DelayBit();
 				//DelayBit();
 				
-		        if(Plc_Tx_Bit)
+		        if(Plc_Tx_Second_Bit)
 		            TX0_PN21();
 		        else
 		            TX1_PN21();
 		        
-		        tr_nor_data(); 
-
+			tr_nor_data();
+			Plc_Tx_first_Bit = Plc_Tx_Bit;
+			
+			tr_nor_data();
+			Plc_Tx_Second_Bit= Plc_Tx_Bit;	
 				
 		        PLC_MOD=0x00;
 		        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
@@ -1882,7 +1885,10 @@ void T16G2Int_Proc(void)
 	        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
             //T16G2RL=T16G1R_S.NumChar[0];
 			trans_step_next();
-            TX0_PN21();
+		        if(Plc_Tx_first_Bit)
+		            TX0_PN21();
+		        else
+		            TX1_PN21();			
 			//delay14t();
             //PLC_RX;
 			DelayBit();
@@ -1890,12 +1896,18 @@ void T16G2Int_Proc(void)
 			DelayBit();
 			//DelayBit();
 			//DelayBit();
-			
-			TX0_PN21();
+		        if(Plc_Tx_Second_Bit)
+		            TX0_PN21();
+		        else
+		            TX1_PN21();
 
 			tr_nor_data();
+			Plc_Tx_first_Bit = Plc_Tx_Bit;
 			
-            delay14t();
+			tr_nor_data();
+			Plc_Tx_Second_Bit= Plc_Tx_Bit;			
+
+			delay14t();
 
 
 			Plc_Mode=0;
@@ -1930,8 +1942,8 @@ void T16G2Int_Proc(void)
             PLC_MOD=0x59;
          
    	        Recv_25Pn();
-            DelayBit();
-		    Recv_sec_25Pn();   	
+               DelayBit();
+		 Recv_sec_25Pn();   	
    	        PLC_MOD=0x00;		//0720
         }
    	    else // if(TX_step==1)		//
@@ -2006,6 +2018,29 @@ void T16G2Int_Proc(void)
    	}
 }
 
+
+void  INTS(void) interrupt 
+{	
+	
+	if((T16G2IF)&&(T16G2IE))  
+	{ 
+	    T16G2Int_Proc();
+	    T16G2IF=0;	   
+	}
+	if((T16G1IF)&&(T16G1IE))  
+	{  
+	    T16G1Int_Proc();
+	    T16G1IF=0;
+	}
+	if ((T8NIF) && (T8NIE))
+	{
+		timer8N();
+	}
+ }
+ 
+
+
+
 void Sync_tiaozheng(void)
 {
     uchar ucB,ucC;
@@ -2023,11 +2058,35 @@ void Sync_tiaozheng(void)
         }
     }
 }
-void Recvplc_Proc(void)
+
+void Sync_tiaozheng2(void)
+{
+    uchar ucB,ucC;
+    for(ucB=0;ucB<SYCl_offset2;ucB++) 				//约13335T
+    {
+        for(ucC=SYM_offset2+24;ucC<24+24;ucC++)
+        {
+            BitData_T[ucC]<<=1;
+            if(BitData_T[ucC+1]&0x80) 
+            {
+                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
+	            Bit1Num_T[ucC]++;
+                Bit1Num_T[ucC+1]--;
+            }  
+        }
+    }
+}
+
+void _Recvplc_Proc(uchar offset)
 {
     //if(1/*Sync_Step=='E'*/)
-	Sync_tiaozheng();	
-	Sum_DM21_Sync(SYM_offset);
+       if (offset == 0) {
+		Sync_tiaozheng();	
+		Sum_DM21_Sync(SYM_offset);
+       }else {
+		Sync_tiaozheng2();	
+		Sum_DM21_Sync2(SYM_offset2);
+	 }
 	sync_word_l<<=1;	
 	if(plc_byte_data&0x80)
 	{	
@@ -2079,25 +2138,12 @@ void Recvplc_Proc(void)
 	}        
 }
 
-void  INTS(void) interrupt 
-{	
-	
-	if((T16G2IF)&&(T16G2IE))  
-	{ 
-	    T16G2Int_Proc();
-	    T16G2IF=0;	   
-	}
-	if((T16G1IF)&&(T16G1IE))  
-	{  
-	    T16G1Int_Proc();
-	    T16G1IF=0;
-	}
-	if ((T8NIF) && (T8NIE))
-	{
-		timer8N();
-	}
- }
- 
+void Recvplc_Proc()
+{
+	_Recvplc_Proc(0);
+	if (Sync_Step)
+		_Recvplc_Proc(24);
+}
 
 
 //相位同步法1,每次移1BIT,移7次，每次都要按15个字节按字节移15次；共计算8*15=120次
@@ -2116,16 +2162,24 @@ void _Sync1_Proc(uchar offset)
     {
         for(ucA=0;ucA<3;ucA++)
     	{
-    		if (offset == 0)
-            	Sum_DM21_Sync(ucA);
-			else
-				Sum_DM21_Sync2(ucA);
-	        if(ZXDM>Sum_Max)
-	        {
-	  	        Sum_Max=ZXDM;
-	  	        SYM_offset=ucA;
-	  	        SYCl_offset=ucB;
-	        }
+    		if (offset == 0) {
+            		Sum_DM21_Sync(ucA);
+	       	if(ZXDM>Sum_Max)
+	        	{
+	  	       	Sum_Max=ZXDM;
+	  	        	SYM_offset=ucA;
+	  	        	SYCl_offset=ucB;
+	        	}					
+    		}else {
+			Sum_DM21_Sync2(ucA);
+	       	if(ZXDM>Sum_Max)
+	        	{
+	  	       	Sum_Max=ZXDM;
+	  	        	SYM_offset2=ucA;
+	  	        	SYCl_offset2=ucB;
+	        	}			
+    		}
+
             //    else 6 nop 
 	        if(FXDM>Sum_FXMax)
 	        {
@@ -2198,12 +2252,9 @@ void _Sync1_Proc(uchar offset)
 
 void Sync1_Proc(void)
 {
-	T16G2IE = 0;
-
 	_Sync1_Proc(0);
 	if (Sync_Step == 'C')
 		_Sync1_Proc(24);
-	T16G2IE = 1;
 }
 
 
@@ -2240,6 +2291,8 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
 	tr_rc_data_lgth=num+2;		//9
 	plc_byte_data=0xff;
 	trans_step = 0;
+	Plc_Tx_first_Bit = 1;//first sync bit
+	Plc_Tx_Second_Bit = 1; // second sync bit
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
     T16G1IF=0;
