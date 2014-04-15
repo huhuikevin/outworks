@@ -72,8 +72,11 @@ do {\
 
 uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
-section20 uchar BitData_T[128]@0xa00;//BitDataBak_T[16];	//同步时的位数据
-section21 uchar Bit1Num_T[128]@0xa80;					//同步时收到1的个数（18T内）
+section20 uchar BitData_T[64]@0xa00;//BitDataBak_T[16];	//同步时的位数据
+section20 uchar BitData_T1[64]@0xa40;
+
+section21 uchar Bit1Num_T[64]@0xa80;					//同步时收到1的个数（18T内）
+section21 uchar Bit1Num_T1[44]@0xac0;
 
 uchar SYM_offset,Sync_Step,SYM_offset2;
 	  
@@ -2141,6 +2144,16 @@ void Recvplc_Proc()
 		_Recvplc_Proc(24);
 }
 
+#define OFF_do(b) \
+do {\
+	BitData_T[b]<<=1;\
+	if(BitData_T[b+1]&0x80) \
+	{		\
+		BitData_T[b]++;	\
+		Bit1Num_T[b]++;\
+		Bit1Num_T[b+1]--;\
+	}\
+}while(0);
 
 //相位同步法1,每次移1BIT,移7次，每次都要按15个字节按字节移15次；共计算8*15=120次
 void _Sync1_Proc(uchar offset)
@@ -2182,7 +2195,7 @@ void _Sync1_Proc(uchar offset)
 	  	        Sum_FXMax=FXDM;	  		  	
 	        }
     	}
-
+#if 0
         for(ucC=offset;ucC<23+offset;ucC++)
         {
             BitData_T[ucC]<<=1;
@@ -2191,12 +2204,67 @@ void _Sync1_Proc(uchar offset)
                 BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
 	            Bit1Num_T[ucC]++;
                 Bit1Num_T[ucC+1]--;
-            }  
+            }
+			
             //  else
             //  {  //16 NOP();
           
             //  } 
         }
+#else
+if (offset == 0){
+OFF_do(0);
+OFF_do(1);
+OFF_do(2);
+OFF_do(3);
+OFF_do(4);
+OFF_do(5);
+OFF_do(6);
+OFF_do(7);
+OFF_do(8);
+OFF_do(9);
+OFF_do(10);
+OFF_do(11);
+OFF_do(12);
+OFF_do(13);
+OFF_do(14);
+OFF_do(15);
+OFF_do(16);
+OFF_do(17);
+OFF_do(18);
+OFF_do(19);
+OFF_do(20);
+OFF_do(21);
+OFF_do(22);
+//OFF_do(23);
+}else{
+	OFF_do(0+24);
+	OFF_do(1+24);
+	OFF_do(2+24);
+	OFF_do(3+24);
+	OFF_do(4+24);
+	OFF_do(5+24);
+	OFF_do(6+24);
+	OFF_do(7+24);
+	OFF_do(8+24);
+	OFF_do(9+24);
+	OFF_do(10+24);
+	OFF_do(11+24);
+	OFF_do(12+24);
+	OFF_do(13+24);
+	OFF_do(14+24);
+	OFF_do(15+24);
+	OFF_do(16+24);
+	OFF_do(17+24);
+	OFF_do(18+24);
+	OFF_do(19+24);
+	OFF_do(20+24);
+	OFF_do(21+24);
+	OFF_do(22+24);
+	//OFF_do(23+24);
+
+}
+#endif		
     }
  
     if(Sync_Step=='C')
@@ -2246,11 +2314,23 @@ void _Sync1_Proc(uchar offset)
     }
 }
 
+
+
+union SVR_INT_B08 t1, t2;
+int test;
 void Sync1_Proc(void)
 {
+   //T16G2IE = 0;
+  	t1.NumChar[0]=T16G1L;
+  	t1.NumChar[1] = T16G1H; 
 	_Sync1_Proc(0);
 	if (Sync_Step == 'C')
 		_Sync1_Proc(24);
+  	t2.NumChar[0]=T16G1L;
+   	t2.NumChar[1] = T16G1H;	
+	test = t2.NumInt - t1.NumInt;
+  // T16G2IE = 1;     
+   
 }
 
 
@@ -2347,6 +2427,7 @@ void plc_init(void)
 	Plc_Mode = 0;
 	Plc_ZeroMode = 0;
 	trans_step= 0;
+	Rec_Zero_bz= 0;
 }
 
 void plc_driver_txrx(void)
