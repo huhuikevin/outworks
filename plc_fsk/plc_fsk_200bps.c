@@ -42,33 +42,13 @@ static volatile   section64  sbit  PLC_FSK_RXD      @ (unsigned) &PLC_MOD* 8 + 3
 
 unsigned char Sync_bit1_cnt,TX_step;
 uchar section1  testbyte, tx_rx_byte;
-                               /* 8ms*/  /* 6.7ms*/
+                                                /* 8ms*/  /* 6.7ms*/
 const uchar  T16g1RH_Time[6]={0x40,0x9c,0xdc,0x82,0xad,0x6e};
 const uchar  T3_53ms_RH = 0x44;
 const uchar  T3_53ms_RL = 0xf2;
 const uchar  T6_47ms_RH = 0x7e;
 const uchar  T6_47ms_RL = 0x5e;
 uchar section1 trans_step;
-
-#if 0
-#define trans_step_next()\
-do {\
-	if (trans_step == 0){ \
-		T16G2RH = T3_53ms_RH;\
-		T16G2RL = T3_53ms_RL;\
-	}else{\
-		T16G2RH = T6_47ms_RH;\
-		T16G2RL = T6_47ms_RL;\
-	}\
-	trans_step ^= 1;\
-}while(0);
-#else
-#define trans_step_next()\
-do {\
-    T16G2RH=T16G1R_S.NumChar[1];	\
-    T16G2RL=T16G1R_S.NumChar[0]; \
-}while(0);
-#endif
 
 uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
@@ -96,6 +76,40 @@ section14 uchar Zero_cnt,Tx_timer;
 section14 union SVR_INT_B08 T16G1R_int[8],T16G1R_20ms[8],T16G1R_old,T16G1R_new,T16G1_TRStartint;//T16G1R1,T16G1R2,T16G1R3,T16G1R4,T16G1R5,T16G1R6;
 section14 union SVR_LONG_B08 T16G1R_S;
 section13 uchar RSSIByte_buf[32],RSSIBit_buf[8];
+
+
+#if 0
+#define trans_step_next()\
+do {\
+	if (trans_step == 0){ \
+		T16G2RH = T3_53ms_RH;\
+		T16G2RL = T3_53ms_RL;\
+	}else{\
+		T16G2RH = T6_47ms_RH;\
+		T16G2RL = T6_47ms_RL;\
+	}\
+	trans_step ^= 1;\
+}while(0);
+#else
+#define trans_step_next()\
+do {\
+    T16G2RH=T16G1R_S.NumChar[1];	\
+    T16G2RL=T16G1R_S.NumChar[0]; \
+}while(0);
+#endif
+
+
+#define plc_restart() \
+do{
+	T16G2IE=0;
+  	Plc_Mode=0;
+  	TX_step=0;
+  	Sync_Step=0;
+  	Plc_SyncBZ=0;
+	r_sync_bit = 0;
+       T16G1IF=0;
+  	T16G1IE=1;
+}while(0);
 
 
 void IniT16G1(uchar Mode)
@@ -977,15 +991,7 @@ void rcv_normal_data(void)   /*正常接收*/
 	{// tr_rc_data_lgth=Plc_recv[6]+8;
         if(Plc_recv[0]>=MaxPlcL) 
 	  	{
-            T16G2IE=0;
-  	        Plc_Mode=0;
-  	        TX_step=0;
-  	        Sync_Step=0;
-  	        r_sync_bit=0;
-  	        Plc_SyncBZ=0;
-			trans_step= 0;
-            T16G1IF=0;
-  	        T16G1IE=1;
+		plc_restart();
             return;
 		}
 	}	
@@ -1912,21 +1918,7 @@ void T16G2Int_Proc(void)
 
 			delay14t();
 
-
-			Plc_Mode=0;
-			
-			t_nor_bit=0;
-			tr_rc_data_lgth=0;
-			trans_step = 0;
-			R_LED=1;
-			//		 T16G1IF=0; 		//0802
-			T16G1IE=1;
-			 
-			T16G2IE=0;
-			PLC_MOD=0X59;
-
-
-			
+		
             PLC_RX;
 			
  	        //    	Ini_Plc_Rec();
@@ -2104,14 +2096,9 @@ void _Recvplc_Proc(uchar offset)
 	Sync_bit1_cnt++;
 	if(((plc_byte_data&0x01)==0)&&(sync_word_l!=0xff))
 	{
-	    Sync_Step=0;
-		Plc_SyncBZ=0;
-		Plc_Mode=0;
+		plc_restart():
 		R_LED=0;
-		trans_step= 0;
-		IniT16G1(CCPMODE);
-		T16G1IE=1;
-		T16G2IE=0;
+
 		return;
 	}
 	if((plc_byte_data==0xaa)&&(sync_word_l==0xff)) //Sync_Char
@@ -2125,14 +2112,9 @@ void _Recvplc_Proc(uchar offset)
 	else {
 	    if(Sync_bit1_cnt>=Sync_bit1_cnt_Max)
 		{
-		    Sync_Step=0;
-		    Plc_SyncBZ=0;
-		    Plc_Mode=0;
-			trans_step = 0;
-		    R_LED=0;
-		    IniT16G1(CCPMODE);
-		    T16G1IE=1;
-		    T16G2IE=0;
+			plc_restart();
+		    	R_LED=0;
+		    	IniT16G1(CCPMODE);
 		}
 	}        
 }
@@ -2144,7 +2126,7 @@ void Recvplc_Proc()
 		_Recvplc_Proc(24);
 }
 
-#define OFF_do(b) \
+#define do_left_shift_1bit(b) \
 do {\
 	BitData_T[b]<<=1;\
 	if(BitData_T[b+1]&0x80) \
@@ -2212,58 +2194,58 @@ void _Sync1_Proc(uchar offset)
             //  } 
         }
 #else
-if (offset == 0){
-OFF_do(0);
-OFF_do(1);
-OFF_do(2);
-OFF_do(3);
-OFF_do(4);
-OFF_do(5);
-OFF_do(6);
-OFF_do(7);
-OFF_do(8);
-OFF_do(9);
-OFF_do(10);
-OFF_do(11);
-OFF_do(12);
-OFF_do(13);
-OFF_do(14);
-OFF_do(15);
-OFF_do(16);
-OFF_do(17);
-OFF_do(18);
-OFF_do(19);
-OFF_do(20);
-OFF_do(21);
-OFF_do(22);
-//OFF_do(23);
-}else{
-	OFF_do(0+24);
-	OFF_do(1+24);
-	OFF_do(2+24);
-	OFF_do(3+24);
-	OFF_do(4+24);
-	OFF_do(5+24);
-	OFF_do(6+24);
-	OFF_do(7+24);
-	OFF_do(8+24);
-	OFF_do(9+24);
-	OFF_do(10+24);
-	OFF_do(11+24);
-	OFF_do(12+24);
-	OFF_do(13+24);
-	OFF_do(14+24);
-	OFF_do(15+24);
-	OFF_do(16+24);
-	OFF_do(17+24);
-	OFF_do(18+24);
-	OFF_do(19+24);
-	OFF_do(20+24);
-	OFF_do(21+24);
-	OFF_do(22+24);
-	//OFF_do(23+24);
+	if (offset == 0){
+		do_left_shift_1bit(0);
+		do_left_shift_1bit(1);
+		do_left_shift_1bit(2);
+		do_left_shift_1bit(3);
+		do_left_shift_1bit(4);
+		do_left_shift_1bit(5);
+		do_left_shift_1bit(6);
+		do_left_shift_1bit(7);
+		do_left_shift_1bit(8);
+        	do_left_shift_1bit(9);
+        	do_left_shift_1bit(10);
+        	do_left_shift_1bit(11);
+        	do_left_shift_1bit(12);
+        	do_left_shift_1bit(13);
+        	do_left_shift_1bit(14);
+        	do_left_shift_1bit(15);
+        	do_left_shift_1bit(16);
+        	do_left_shift_1bit(17);
+        	do_left_shift_1bit(18);
+        	do_left_shift_1bit(19);
+        	do_left_shift_1bit(20);
+        	do_left_shift_1bit(21);
+        	do_left_shift_1bit(22);
+        //OFF_do(23);
+    	}else{
+	    	do_left_shift_1bit(0+24);
+	    	do_left_shift_1bit(1+24);
+	    	do_left_shift_1bit(2+24);
+	    	do_left_shift_1bit(3+24);
+	    	do_left_shift_1bit(4+24);
+	    	do_left_shift_1bit(5+24);
+	    	do_left_shift_1bit(6+24);
+	    	do_left_shift_1bit(7+24);
+	    	do_left_shift_1bit(8+24);
+	    	do_left_shift_1bit(9+24);
+	    	do_left_shift_1bit(10+24);
+	    	do_left_shift_1bit(11+24);
+	    	do_left_shift_1bit(12+24);
+	    	do_left_shift_1bit(13+24);
+	    	do_left_shift_1bit(14+24);
+	    	do_left_shift_1bit(15+24);
+	    	do_left_shift_1bit(16+24);
+	    	do_left_shift_1bit(17+24);
+	    	do_left_shift_1bit(18+24);
+	    	do_left_shift_1bit(19+24);
+	    	do_left_shift_1bit(20+24);
+	    	do_left_shift_1bit(21+24);
+	    	do_left_shift_1bit(22+24);
+	    	//OFF_do(23+24);
 
-}
+    }
 #endif		
     }
  
@@ -2280,15 +2262,7 @@ OFF_do(22);
     	}
  	    else
   	    {
-  	        T16G2IE=0;
-  	        Plc_Mode=0;
-  	        TX_step=0;
-  	        Sync_Step=0;
-  	        Plc_SyncBZ=0;
-			trans_step = 0;
-            T16G1IF=0;
-  	        T16G1IE=1;
-  	        // IniT16G1(CCPMODE);
+			plc_restart();
    	    }
     }
     else 
@@ -2301,15 +2275,7 @@ OFF_do(22);
         }
         else
   	    {
-  	        T16G2IE=0;
-            Plc_Mode=0;
-            TX_step=0;
-  	        Sync_Step=0;
-  	        Plc_SyncBZ=0;
-			trans_step= 0;
-	        T16G1IF=0;
-  	        T16G1IE=1;
-  	        //  IniT16G1(CCPMODE);
+		plc_restart();
    	    }
     }
 }
@@ -2350,11 +2316,11 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
         return 0;
 
 	Plc_recv[0]=0xaa;	
-    Plc_recv[1]=num+2;	
+       Plc_recv[1]=num+2;	
 	MMemcpy(&Plc_recv[2],pdata,num);
 	T16G2IE=0;
 	Ini_Plc_Tx();
-    S_LED=1;
+       S_LED=1;
 	R_LED = 0;
 //	cal_chk_sum();
 	Plc_Mode='T';           
