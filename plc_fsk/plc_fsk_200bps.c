@@ -76,7 +76,7 @@ section20 uchar BitData_T[64]@0xa00;//BitDataBak_T[16];	//同步时的位数据
 section20 uchar BitData_T1[64]@0xa40;
 
 section21 uchar Bit1Num_T[64]@0xa80;					//同步时收到1的个数（18T内）
-section21 uchar Bit1Num_T1[44]@0xac0;
+section21 uchar Bit1Num_T1[64]@0xac0;
 
 uchar SYM_offset,Sync_Step,SYM_offset2;
 	  
@@ -2316,19 +2316,20 @@ OFF_do(22);
 
 
 
-union SVR_INT_B08 t1, t2;
-int test;
+//union SVR_INT_B08 t1, t2;
+//int test;
 void Sync1_Proc(void)
 {
    //T16G2IE = 0;
-  	t1.NumChar[0]=T16G1L;
-  	t1.NumChar[1] = T16G1H; 
+  //	t1.NumChar[0]=T16G1L;
+  //	t1.NumChar[1] = T16G1H; 
 	_Sync1_Proc(0);
 	if (Sync_Step == 'C')
 		_Sync1_Proc(24);
-  	t2.NumChar[0]=T16G1L;
-   	t2.NumChar[1] = T16G1H;	
-	test = t2.NumInt - t1.NumInt;
+	
+  	//t2.NumChar[0]=T16G1L;
+   //	t2.NumChar[1] = T16G1H;	
+	//test = t2.NumInt - t1.NumInt;
   // T16G2IE = 1;     
    
 }
