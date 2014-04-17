@@ -102,7 +102,7 @@ do \
 #define linklay_set_recv_empty(mac) do { linklay[mac].frame_state=linklay[mac].frame_state&(~FRMAE_RECV_DATA);}while(0);
 #define linklay_has_recved_data(mac) (linklay[mac].frame_state & FRMAE_RECV_DATA)
 
-section6 sLinklayCtrl linklay[MacTypeEnd]@300;
+section6 sLinklayCtrl linklay[MacTypeEnd]@0x300;
 
 void linklay_send_process();
 void linklay_recv_process();
@@ -112,8 +112,9 @@ int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num);
 
 void linklay_init()
 {
-	MMemSet(&linklay[0], 0, sizeof(sLinklayCtrl)*MacTypeEnd);
+	MMemSet(&linklay[0], 0, sizeof(sLinklayCtrl));
 	linklay[0].mac_type = MacPlc;
+	MMemSet(&linklay[1], 0, sizeof(sLinklayCtrl));
 	linklay[1].mac_type = MacWireless_2_4G;
 }
 

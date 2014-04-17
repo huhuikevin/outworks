@@ -38,7 +38,7 @@ int8u recv_process()
     int8u len = linklay_recv_data(&app_data[0], MacPlc);
 
     if (len == 2){
-        if (app_data[0] == 0xaa && app_data[1] == 0x55)
+        if (app_data[0] == 0xaa )
         {
 			OpenRLed;
 			DelayMs(200);

@@ -15,7 +15,7 @@
 #ifdef SENDER
 #define  R_LED PB5
 #else
-#define  R_LED PB5
+#define  R_LED PB7
 #endif
 #define  S_LED PB7  
 #define	 STA     PB6
@@ -53,10 +53,10 @@ uchar section1 trans_step;
 uchar  Sum_Max,ZXDM,Sum_FXMax,Temp1,FXDM;
 
 section20 uchar BitData_T[64]@0xa00;//BitDataBak_T[16];	//同步时的位数据
-section20 uchar BitData_T1[64]@0xa40;
+//section20 uchar BitData_T1[64]@0xa40;
 
-section21 uchar Bit1Num_T[64]@0xa80;					//同步时收到1的个数（18T内）
-section21 uchar Bit1Num_T1[64]@0xac0;
+section20 uchar Bit1Num_T[64]@0xa40;					//同步时收到1的个数（18T内）
+//section21 uchar Bit1Num_T1[64]@0xac0;
 
 uchar SYM_offset,Sync_Step,SYM_offset2;
 	  
@@ -67,7 +67,7 @@ sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz,ACZero_Bz;
 sbit   Plc_Tx_Bit,Plc_Tx_first_Bit,Plc_Tx_Second_Bit;
 uchar  Plc_bit_rcv_cnt,Plc_byte_rcv_cnt,tr_rc_data_lgth,Plc_S,Pn15_cnt,Plc_Mode,Plc_ZeroMode;
 
-section3 uchar Plc_recv[106]@180;
+section3 uchar Plc_recv[106]@0x180;
 section3 uchar RSSIV,RSSIT; 
 section3 uchar SYM_off[8],SYCl_off[8];
 section13 uchar ZXDM_buf[40],RSSIV_buf[40];
@@ -100,15 +100,28 @@ do {\
 
 
 #define plc_restart() \
-do{
-	T16G2IE=0;
-  	Plc_Mode=0;
-  	TX_step=0;
-  	Sync_Step=0;
-  	Plc_SyncBZ=0;
-	r_sync_bit = 0;
-       T16G1IF=0;
-  	T16G1IE=1;
+do{\
+	T16G2IE=0;\
+  	Plc_Mode=0;\
+  	TX_step=0;\
+  	Sync_Step=0;\
+  	Plc_SyncBZ=0;\
+	r_sync_bit = 0;\
+   T16G1IF=0;\
+  	T16G1IE=1;\
+}while(0);
+
+#define do_left_shift_1bit(b) \
+do {\
+	if (BitData_T[b] & 0x80) \
+		Bit1Num_T[b]--;\
+	BitData_T[b]<<=1;\
+	if(BitData_T[b+1]&0x80) \
+	{		\
+		BitData_T[b]++;	\
+		Bit1Num_T[b]++;\
+		Bit1Num_T[b+1]--;\
+	}\
 }while(0);
 
 
@@ -656,110 +669,110 @@ void  Sum_DM21_Sync2(uchar offset )
     switch(offset)
     {
     case 0 :
-        ucS1=Bit1Num_T[2+26];
-        ucS1+=Bit1Num_T[4+26];
-        ucS1+=Bit1Num_T[5+26];
-        ucS1+=Bit1Num_T[6+26];    
-        ucS0=Bit1Num_T[0+26];	
-        ucS0+=Bit1Num_T[1+26];	
-        ucS0+=Bit1Num_T[3+26];
+        ucS1=Bit1Num_T[2+24];
+        ucS1+=Bit1Num_T[4+24];
+        ucS1+=Bit1Num_T[5+24];
+        ucS1+=Bit1Num_T[6+24];    
+        ucS0=Bit1Num_T[0+24];	
+        ucS0+=Bit1Num_T[1+24];	
+        ucS0+=Bit1Num_T[3+24];
    
-        ucS1+=Bit1Num_T[9+26];
-        ucS1+=Bit1Num_T[11+26];
-        ucS1+=Bit1Num_T[12+26];
-        ucS1+=Bit1Num_T[13+26];
-        ucS0+=Bit1Num_T[7+26];	
-        ucS0+=Bit1Num_T[8+26];	    	
-        ucS0+=Bit1Num_T[10+26];
+        ucS1+=Bit1Num_T[9+24];
+        ucS1+=Bit1Num_T[11+24];
+        ucS1+=Bit1Num_T[12+24];
+        ucS1+=Bit1Num_T[13+24];
+        ucS0+=Bit1Num_T[7+24];	
+        ucS0+=Bit1Num_T[8+24];	    	
+        ucS0+=Bit1Num_T[10+24];
 
-        ucS1+=Bit1Num_T[16+26];
-        ucS1+=Bit1Num_T[18+26];
-        ucS1+=Bit1Num_T[19+26];
-        ucS1+=Bit1Num_T[20+26];   
-        ucS0+=Bit1Num_T[14+26];	
-        ucS0+=Bit1Num_T[15+26];	    	
-        ucS0+=Bit1Num_T[17+26];
+        ucS1+=Bit1Num_T[16+24];
+        ucS1+=Bit1Num_T[18+24];
+        ucS1+=Bit1Num_T[19+24];
+        ucS1+=Bit1Num_T[20+24];   
+        ucS0+=Bit1Num_T[14+24];	
+        ucS0+=Bit1Num_T[15+24];	    	
+        ucS0+=Bit1Num_T[17+24];
   
         ZXDM=ucS1+72-ucS0;
         break;
     case 1 :
-        ucS1=Bit1Num_T[3+26];
-        ucS1+=Bit1Num_T[5+26];
-        ucS1+=Bit1Num_T[6+26];
-        ucS1+=Bit1Num_T[7+26];    
-        ucS0=Bit1Num_T[1+26];	
-        ucS0+=Bit1Num_T[2+26];	
-        ucS0+=Bit1Num_T[4+26];
+        ucS1=Bit1Num_T[3+24];
+        ucS1+=Bit1Num_T[5+24];
+        ucS1+=Bit1Num_T[6+24];
+        ucS1+=Bit1Num_T[7+24];    
+        ucS0=Bit1Num_T[1+24];	
+        ucS0+=Bit1Num_T[2+24];	
+        ucS0+=Bit1Num_T[4+24];
    
-        ucS1+=Bit1Num_T[10+26];
-        ucS1+=Bit1Num_T[12+26];
-        ucS1+=Bit1Num_T[13+26];
-        ucS1+=Bit1Num_T[14+26];
-        ucS0+=Bit1Num_T[8+26];	
-        ucS0+=Bit1Num_T[9+26];	    	
-        ucS0+=Bit1Num_T[11+26];
+        ucS1+=Bit1Num_T[10+24];
+        ucS1+=Bit1Num_T[12+24];
+        ucS1+=Bit1Num_T[13+24];
+        ucS1+=Bit1Num_T[14+24];
+        ucS0+=Bit1Num_T[8+24];	
+        ucS0+=Bit1Num_T[9+24];	    	
+        ucS0+=Bit1Num_T[11+24];
      
-        ucS1+=Bit1Num_T[17+26];
-        ucS1+=Bit1Num_T[19+26];
-        ucS1+=Bit1Num_T[20+26];
-        ucS1+=Bit1Num_T[21+26];   
-        ucS0+=Bit1Num_T[15+26];	
-        ucS0+=Bit1Num_T[16+26];	    	
-        ucS0+=Bit1Num_T[18+26];
+        ucS1+=Bit1Num_T[17+24];
+        ucS1+=Bit1Num_T[19+24];
+        ucS1+=Bit1Num_T[20+24];
+        ucS1+=Bit1Num_T[21+24];   
+        ucS0+=Bit1Num_T[15+24];	
+        ucS0+=Bit1Num_T[16+24];	    	
+        ucS0+=Bit1Num_T[18+24];
    
         ZXDM=ucS1+72-ucS0;
         break;
     case 2 :
-        ucS1=Bit1Num_T[4+26];   
-        ucS1+=Bit1Num_T[6+26];
-        ucS1+=Bit1Num_T[7+26];
-        ucS1+=Bit1Num_T[8+26];     
-        ucS0=Bit1Num_T[2+26];	
-        ucS0+=Bit1Num_T[3+26];	
-        ucS0+=Bit1Num_T[5+26];
+        ucS1=Bit1Num_T[4+24];   
+        ucS1+=Bit1Num_T[6+24];
+        ucS1+=Bit1Num_T[7+24];
+        ucS1+=Bit1Num_T[8+24];     
+        ucS0=Bit1Num_T[2+24];	
+        ucS0+=Bit1Num_T[3+24];	
+        ucS0+=Bit1Num_T[5+24];
    
-        ucS1+=Bit1Num_T[11+26];
-        ucS1+=Bit1Num_T[13+26];
-        ucS1+=Bit1Num_T[14+26];
-        ucS1+=Bit1Num_T[15+26];
-        ucS0+=Bit1Num_T[9+26];	
-        ucS0+=Bit1Num_T[10+26];	    	
-        ucS0+=Bit1Num_T[12+26];
+        ucS1+=Bit1Num_T[11+24];
+        ucS1+=Bit1Num_T[13+24];
+        ucS1+=Bit1Num_T[14+24];
+        ucS1+=Bit1Num_T[15+24];
+        ucS0+=Bit1Num_T[9+24];	
+        ucS0+=Bit1Num_T[10+24];	    	
+        ucS0+=Bit1Num_T[12+24];
      
-        ucS1+=Bit1Num_T[18+26];
-        ucS1+=Bit1Num_T[20+26];
-        ucS1+=Bit1Num_T[21+26];
-        ucS1+=Bit1Num_T[22+26];   
-        ucS0+=Bit1Num_T[16+26];	
-        ucS0+=Bit1Num_T[17+26];	    	
-        ucS0+=Bit1Num_T[19+26];
+        ucS1+=Bit1Num_T[18+24];
+        ucS1+=Bit1Num_T[20+24];
+        ucS1+=Bit1Num_T[21+24];
+        ucS1+=Bit1Num_T[22+24];   
+        ucS0+=Bit1Num_T[16+24];	
+        ucS0+=Bit1Num_T[17+24];	    	
+        ucS0+=Bit1Num_T[19+24];
    
         ZXDM=ucS1+72-ucS0;
         break;
     case 3 :
-        ucS1=Bit1Num_T[5+26];   
-        ucS1+=Bit1Num_T[7+26];
-        ucS1+=Bit1Num_T[8+26];
-        ucS1+=Bit1Num_T[9+26];     
-        ucS0=Bit1Num_T[3+26];	
-        ucS0+=Bit1Num_T[4+26];	
-        ucS0+=Bit1Num_T[6+26];
+        ucS1=Bit1Num_T[5+24];   
+        ucS1+=Bit1Num_T[7+24];
+        ucS1+=Bit1Num_T[8+24];
+        ucS1+=Bit1Num_T[9+24];     
+        ucS0=Bit1Num_T[3+24];	
+        ucS0+=Bit1Num_T[4+24];	
+        ucS0+=Bit1Num_T[6+24];
 
-        ucS1+=Bit1Num_T[12+26];
-        ucS1+=Bit1Num_T[14+26];
-        ucS1+=Bit1Num_T[15+26];
-        ucS1+=Bit1Num_T[16+26];
-        ucS0+=Bit1Num_T[10+26];	
-        ucS0+=Bit1Num_T[11+26];	    	
-        ucS0+=Bit1Num_T[13+26];
+        ucS1+=Bit1Num_T[12+24];
+        ucS1+=Bit1Num_T[14+24];
+        ucS1+=Bit1Num_T[15+24];
+        ucS1+=Bit1Num_T[16+24];
+        ucS0+=Bit1Num_T[10+24];	
+        ucS0+=Bit1Num_T[11+24];	    	
+        ucS0+=Bit1Num_T[13+24];
      
-        ucS1+=Bit1Num_T[19+26];
-        ucS1+=Bit1Num_T[21+26];
-        ucS1+=Bit1Num_T[22+26];
-        ucS1+=Bit1Num_T[23+26];   
-        ucS0+=Bit1Num_T[17+26];	
-        ucS0+=Bit1Num_T[18+26];	    	
-        ucS0+=Bit1Num_T[20+26];
+        ucS1+=Bit1Num_T[19+24];
+        ucS1+=Bit1Num_T[21+24];
+        ucS1+=Bit1Num_T[22+24];
+        ucS1+=Bit1Num_T[23+24];   
+        ucS0+=Bit1Num_T[17+24];	
+        ucS0+=Bit1Num_T[18+24];	    	
+        ucS0+=Bit1Num_T[20+24];
    
         ZXDM=ucS1+72-ucS0;
         break;
@@ -979,7 +992,8 @@ void tr_nor_data(void)   /*发送正常数据*/
    
 /*******************接收载波数据******************/
 void rcv_normal_data(void)   /*正常接收*/
-{	
+{
+	uchar i;
 	Plc_bit_rcv_cnt--;     	/*还剩几位*/
 	if(Plc_bit_rcv_cnt!=0)	/*未接收完一个字节*/
 		return;
@@ -987,6 +1001,7 @@ void rcv_normal_data(void)   /*正常接收*/
 	Plc_bit_rcv_cnt=8;
 	Plc_recv[Plc_byte_rcv_cnt]=plc_byte_data;              /*存储一个字节*/
 	Plc_byte_rcv_cnt++;
+
 	if(Plc_byte_rcv_cnt==1) 
 	{// tr_rc_data_lgth=Plc_recv[6]+8;
         if(Plc_recv[0]>=MaxPlcL) 
@@ -1157,21 +1172,148 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     NOP();
 }
 
+void Recv_Plc_78Bit(void)		//1332t采样8次,166T和167间隔采样
+{
+	uchar ucA;
+	Plc_S=0;	
+	bit1_cnt=0;	
+	delay5us();
+	delay14t();
+	delay14t();
+	   
+	Plc_S<<=1;
+	if(PLC_FSK_RXD) 
+	{	
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+	delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	//   NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD) 
+	{	
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+    delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD)
+	{
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+    delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	//   NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD)
+	{	
+        Plc_S|=0x01;
+	  	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+    delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD)
+	{	
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+       	NOP();
+    }
+    delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	//   NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD)
+	{	
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+    delay5us();     	
+	delay5us();
+	delay5us();
+	NOP();
+	NOP();
+	Plc_S<<=1;
+	if(PLC_FSK_RXD)
+	{	
+        Plc_S|=0x01;
+	 	bit1_cnt++;
+    } 
+    else
+    {
+        NOP();
+        NOP();
+        NOP();
+    }
+
+}
+
 void  Recv_25Pn(void)
 {
-#if 1
+
+#if 0
     STA=0;
     //* 0512
-    Recv_Plc_8Bit();				
+    Recv_Plc_78Bit();				
 	Bit1Num_T[0]=bit1_cnt;	//1的个数
 	BitData_T[0]=Plc_S;	
 	
-    delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+    //    delay14t();
+    //	delay14t();
+    //	delay14t();
+    //	NOP();
+    //    NOP();
+    //    NOP();
 #endif	
     //*     0512
 	Recv_Plc_8Bit();				
@@ -1827,7 +1969,8 @@ void T16G2Int_Proc(void)
     {
         T16G1_TRStartint.NumChar[0]=T16G1L;
     }
-
+	if (Rec_Zero_bz) 
+    PB5 = 1;
     if(Plc_Mode=='T')
     {
     //        Uart_rec1Point=0;
@@ -1932,13 +2075,15 @@ void T16G2Int_Proc(void)
     {
         Rec_Zero_bz=1; 
 		trans_step_next();
+		//DelayBit();
         if(TX_step==2)
         {
             PLC_MOD=0x59;
          
    	        Recv_25Pn();
-               DelayBit();
-		 Recv_sec_25Pn();   	
+            DelayBit();
+			DelayBit();
+		 	Recv_sec_25Pn();   	
    	        PLC_MOD=0x00;		//0720
         }
    	    else // if(TX_step==1)		//
@@ -1994,6 +2139,13 @@ void T16G2Int_Proc(void)
         //  T16G2RL=T16G1R_S.NumChar[0];
         trans_step_next();
         Recv_25Pn(); 
+		DelayBit();
+		DelayBit();
+		//DelayBit();
+		//DelayBit();
+		//DelayBit();
+//		DelayBit();
+		Recv_sec_25Pn(); 		
         PLC_MOD=0x00;		//0720
         Plc_Mode='F';     
         Rec_Zero_bz=1;   
@@ -2011,6 +2163,7 @@ void T16G2Int_Proc(void)
 	    Zero_Time_hd();
 		T16G1IF=0;   	
    	}
+	//PB5  = 0;
 }
 
 
@@ -2030,6 +2183,40 @@ void  INTS(void) interrupt
  }
  
 
+void Sync_offset(uchar off)
+{
+switch(off)
+{
+	case 0:
+		do_left_shift_1bit(0);
+	case 1:
+		do_left_shift_1bit(1);
+	case 2:
+		do_left_shift_1bit(2);
+	default:
+		do_left_shift_1bit(3);
+		do_left_shift_1bit(4);
+		do_left_shift_1bit(5);
+		do_left_shift_1bit(6);
+		do_left_shift_1bit(7);
+		do_left_shift_1bit(8);
+		do_left_shift_1bit(9);
+		do_left_shift_1bit(10);
+		do_left_shift_1bit(11);
+		do_left_shift_1bit(12);
+		do_left_shift_1bit(13);
+		do_left_shift_1bit(14);
+		do_left_shift_1bit(15);
+		do_left_shift_1bit(16);
+		do_left_shift_1bit(17);
+		do_left_shift_1bit(18);
+		do_left_shift_1bit(19);
+		do_left_shift_1bit(20);
+		do_left_shift_1bit(21);
+		do_left_shift_1bit(22);
+		break;
+}
+}
 
 
 void Sync_tiaozheng(void)
@@ -2037,8 +2224,9 @@ void Sync_tiaozheng(void)
     uchar ucB,ucC;
     for(ucB=0;ucB<SYCl_offset;ucB++) 				//约13335T
     {
-        for(ucC=SYM_offset;ucC<24;ucC++)
-        {
+    #if 0
+        for(ucC=SYM_offset;ucC<23;ucC++)
+        {        
             BitData_T[ucC]<<=1;
             if(BitData_T[ucC+1]&0x80) 
             {
@@ -2047,16 +2235,65 @@ void Sync_tiaozheng(void)
                 Bit1Num_T[ucC+1]--;
             }  
         }
+	#else
+			if (0 == SYM_offset)
+				Sync_offset(0);
+			if (1 == SYM_offset)
+				Sync_offset(1);
+			if (2 == SYM_offset)
+				Sync_offset(2);
+			else
+				Sync_offset(2);	
+	#endif
     }
 }
+
+void Sync_offset2(uchar off)
+{
+	switch(off)
+	{
+		case 0:
+			do_left_shift_1bit(0+24);
+		case 1:
+			do_left_shift_1bit(1+24);
+		case 2:
+			do_left_shift_1bit(2+24);
+		default:
+			do_left_shift_1bit(3+24);
+			do_left_shift_1bit(4+24);
+			do_left_shift_1bit(5+24);
+			do_left_shift_1bit(6+24);
+			do_left_shift_1bit(7+24);
+			do_left_shift_1bit(8+24);
+			do_left_shift_1bit(9+24);
+			do_left_shift_1bit(10+24);
+			do_left_shift_1bit(11+24);
+			do_left_shift_1bit(12+24);
+			do_left_shift_1bit(13+24);
+			do_left_shift_1bit(14+24);
+			do_left_shift_1bit(15+24);
+			do_left_shift_1bit(16+24);
+			do_left_shift_1bit(17+24);
+			do_left_shift_1bit(18+24);
+			do_left_shift_1bit(19+24);
+			do_left_shift_1bit(20+24);
+			do_left_shift_1bit(21+24);
+			do_left_shift_1bit(22+24);
+			break;
+		}
+}
+
+
+
 
 void Sync_tiaozheng2(void)
 {
     uchar ucB,ucC;
     for(ucB=0;ucB<SYCl_offset2;ucB++) 				//约13335T
     {
-        for(ucC=SYM_offset2+24;ucC<24+24;ucC++)
-        {
+    #if 0
+        for(ucC=SYM_offset2+24;ucC<23+24;ucC++)
+        {       
             BitData_T[ucC]<<=1;
             if(BitData_T[ucC+1]&0x80) 
             {
@@ -2065,6 +2302,17 @@ void Sync_tiaozheng2(void)
                 Bit1Num_T[ucC+1]--;
             }  
         }
+		#else
+		if (0 == SYM_offset2)
+			Sync_offset2(0);
+		if (1 == SYM_offset2)
+			Sync_offset2(1);
+		if (2 == SYM_offset2)
+			Sync_offset2(2);
+		else
+			Sync_offset2(2);
+
+		#endif		
     }
 }
 
@@ -2085,18 +2333,19 @@ void _Recvplc_Proc(uchar offset)
 	}
 	plc_byte_data<<=1;   
     if(Recv_Bit())
-    plc_byte_data|=0x01;
-    ZXDM_buf[Sync_bit1_cnt]=ZXDM;
-    RSSIV_buf[Sync_bit1_cnt]=RSSIV;
+        plc_byte_data|=0x01;
+
+    //ZXDM_buf[Sync_bit1_cnt]=ZXDM;
+    //RSSIV_buf[Sync_bit1_cnt]=RSSIV;
     if(r_sync_bit==1)    //如果收到桢同步信号09
 	{
 	    rcv_normal_data();    //
 	 	return;
 	}
-	Sync_bit1_cnt++;
+   Sync_bit1_cnt++;
 	if(((plc_byte_data&0x01)==0)&&(sync_word_l!=0xff))
 	{
-		plc_restart():
+		plc_restart();
 		R_LED=0;
 
 		return;
@@ -2119,58 +2368,52 @@ void _Recvplc_Proc(uchar offset)
 	}        
 }
 
+union SVR_INT_B08 t1, t2;
+int test;
+
 void Recvplc_Proc()
 {
+	// T16G2IE = 0;
+	//	  t1.NumChar[0]=T16G1L;
+	//	  t1.NumChar[1] = T16G1H; 
+//test = 0xaa;
 	_Recvplc_Proc(0);
 	if (Sync_Step)
 		_Recvplc_Proc(24);
+	
+	//  t2.NumChar[0]=T16G1L;
+	//   t2.NumChar[1] = T16G1H; 
+	//  test = t2.NumInt - t1.NumInt;
+	 //T16G2IE = 1; 	
 }
 
-#define do_left_shift_1bit(b) \
-do {\
-	BitData_T[b]<<=1;\
-	if(BitData_T[b+1]&0x80) \
-	{		\
-		BitData_T[b]++;	\
-		Bit1Num_T[b]++;\
-		Bit1Num_T[b+1]--;\
-	}\
-}while(0);
+
 
 //相位同步法1,每次移1BIT,移7次，每次都要按15个字节按字节移15次；共计算8*15=120次
-void _Sync1_Proc(uchar offset)
+void _Sync1_Proc()
 {
     uchar ucA,ucB,ucC;
 
     Sum_Max=0;
     Sum_FXMax=0;  //0720
-    SYM_offset=0;
-    SYCl_offset=0;
-  
-  
-    BitData_T[23+offset]=BitData_T[0+offset];
+    
+    	SYM_offset=0;
+    	SYCl_offset=0;
+
+	
+    //BitData_T[23+offset]=BitData_T[0+offset];
     for(ucB=0;ucB<8;ucB++) 				//约13335T
     {
         for(ucA=0;ucA<3;ucA++)
     	{
-    		if (offset == 0) {
-            		Sum_DM21_Sync(ucA);
+            Sum_DM21_Sync(ucA);
 	       	if(ZXDM>Sum_Max)
 	        	{
 	  	       	Sum_Max=ZXDM;
 	  	        	SYM_offset=ucA;
 	  	        	SYCl_offset=ucB;
 	        	}					
-    		}else {
-			Sum_DM21_Sync2(ucA);
-	       	if(ZXDM>Sum_Max)
-	        	{
-	  	       	Sum_Max=ZXDM;
-	  	        	SYM_offset2=ucA;
-	  	        	SYCl_offset2=ucB;
-	        	}			
-    		}
-
+    		
             //    else 6 nop 
 	        if(FXDM>Sum_FXMax)
 	        {
@@ -2178,7 +2421,7 @@ void _Sync1_Proc(uchar offset)
 	        }
     	}
 #if 0
-        for(ucC=offset;ucC<23+offset;ucC++)
+        for(ucC=0;ucC<23+0;ucC++)
         {
             BitData_T[ucC]<<=1;
             if(BitData_T[ucC+1]&0x80) 
@@ -2194,7 +2437,7 @@ void _Sync1_Proc(uchar offset)
             //  } 
         }
 #else
-	if (offset == 0){
+	{
 		do_left_shift_1bit(0);
 		do_left_shift_1bit(1);
 		do_left_shift_1bit(2);
@@ -2219,7 +2462,92 @@ void _Sync1_Proc(uchar offset)
         	do_left_shift_1bit(21);
         	do_left_shift_1bit(22);
         //OFF_do(23);
-    	}else{
+    	}
+#endif		
+    }
+ 
+    if(Sync_Step=='C')
+    {
+		if((Sum_Max>Sum_FXMax)&&(Sum_Max>Sync21_Set))
+   	    {
+   	        Plc_Mode='R';
+    	    Sync_Step='E';
+            Sync_bit1_cnt=0;            
+            plc_byte_data=0;
+            TX_step=1;
+            Plc_bit_rcv_cnt = 8;
+            //R_LED=1;
+    	}
+ 	    else
+  	    {
+			plc_restart();
+   	    }
+    }
+    else 
+    {
+        if((Sum_Max>Sum_FXMax)&&(Sum_Max>Sync21_Set))
+        {
+            Plc_SyncBZ=1;
+      	    Sync_Step='C';
+      	    T16G1IE=0;    	
+        }
+        else
+  	    {
+		plc_restart();
+   	    }
+    }
+}
+
+
+void _Sync1_Proc2()
+{
+    uchar ucA,ucB,ucC;
+
+    Sum_Max=0;
+    Sum_FXMax=0;  //0720
+
+    	SYM_offset2=0;
+    	SYCl_offset2=0;
+	
+    //BitData_T[23+offset]=BitData_T[0+offset];
+    for(ucB=0;ucB<8;ucB++) 				//约13335T
+    {
+        for(ucA=0;ucA<3;ucA++)
+    	{
+    	
+			   Sum_DM21_Sync2(ucA);
+	       	if(ZXDM>Sum_Max)
+	        	{
+	  	       	Sum_Max=ZXDM;
+	  	        	SYM_offset2=ucA;
+	  	        	SYCl_offset2=ucB;
+	        	}			
+    		
+
+            //    else 6 nop 
+	        if(FXDM>Sum_FXMax)
+	        {
+	  	        Sum_FXMax=FXDM;	  		  	
+	        }
+    	}
+#if 0
+        for(ucC=24;ucC<23+24;ucC++)
+        {
+            BitData_T[ucC]<<=1;
+            if(BitData_T[ucC+1]&0x80) 
+            {    	
+                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
+	            Bit1Num_T[ucC]++;
+                Bit1Num_T[ucC+1]--;
+            }
+			
+            //  else
+            //  {  //16 NOP();
+          
+            //  } 
+        }
+#else
+	{
 	    	do_left_shift_1bit(0+24);
 	    	do_left_shift_1bit(1+24);
 	    	do_left_shift_1bit(2+24);
@@ -2258,7 +2586,8 @@ void _Sync1_Proc(uchar offset)
             Sync_bit1_cnt=0;            
             plc_byte_data=0;
             TX_step=1;
-            R_LED=1;
+            Plc_bit_rcv_cnt = 8;
+            //R_LED=1;
     	}
  	    else
   	    {
@@ -2280,8 +2609,6 @@ void _Sync1_Proc(uchar offset)
     }
 }
 
-
-
 //union SVR_INT_B08 t1, t2;
 //int test;
 void Sync1_Proc(void)
@@ -2289,9 +2616,9 @@ void Sync1_Proc(void)
    //T16G2IE = 0;
   //	t1.NumChar[0]=T16G1L;
   //	t1.NumChar[1] = T16G1H; 
-	_Sync1_Proc(0);
+	_Sync1_Proc();
 	if (Sync_Step == 'C')
-		_Sync1_Proc(24);
+		_Sync1_Proc2();
 	
   	//t2.NumChar[0]=T16G1L;
    //	t2.NumChar[1] = T16G1H;	
@@ -2320,7 +2647,7 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
 	MMemcpy(&Plc_recv[2],pdata,num);
 	T16G2IE=0;
 	Ini_Plc_Tx();
-       S_LED=1;
+    S_LED=1;
 	R_LED = 0;
 //	cal_chk_sum();
 	Plc_Mode='T';           
@@ -2395,6 +2722,7 @@ void plc_init(void)
 	Plc_ZeroMode = 0;
 	trans_step= 0;
 	Rec_Zero_bz= 0;
+    Plc_byte_rcv_cnt = 0;
 }
 
 void plc_driver_txrx(void)
