@@ -1,5 +1,6 @@
 #include <hic.h>
 #include "type.h"
+#include "tool.h"
 #include "soc_25xx.h"
 #include "plc.h"
 #include "timer8n.h"
@@ -21,12 +22,14 @@ void Ini2571(void)
 void IO_Init(void)
 {
     //GIE=1;
-    PB5 = 0;
-	PB6 = 0;
-	PB7 = 0;
     PBT=0x05;
     PAT=0x80;
     PCT=0x10;
+    PB5 = 1;
+	PB6 = 0;
+	PB7 = 0;    
+    DelayMs(1000);
+    PB5 = 0;
 }
 
 void board_init()

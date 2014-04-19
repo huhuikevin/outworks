@@ -26,8 +26,18 @@ void send_process()
 
     app_data[0] = 0xaa;
     app_data[1] = 0x55;
+
+    app_data[2] = 0xaa;
+    app_data[3] = 0x55;
+
+    app_data[4] = 0xaa;
+    app_data[5] = 0x55;
+
+    app_data[6] = 0xaa;
+    app_data[7] = 0x55;
+
     	
-    len = linklay_send_data(app_data, 2, MacPlc);
+    len = linklay_send_data(app_data, 8, MacPlc);
     if (len){
         DelayMs(2000);
     }
@@ -37,11 +47,11 @@ int8u recv_process()
 {
     int8u len = linklay_recv_data(&app_data[0], MacPlc);
 
-    if (len == 2){
-        if (app_data[0] == 0xaa )
+    if (len == 8){
+        if (app_data[7] == 0x55 )
         {
 			OpenRLed;
-			DelayMs(200);
+			DelayMs(50);
 			CloseRLed;
         }
     }
