@@ -6,6 +6,8 @@ uart.h
 
 
 void UartInit(uchar uartIdx, int16u baudrate);
+void uart_driver_process(void);
+
 #ifdef CONFIG_LINKLAY_UART
 uchar uart_rx_bytes(uchar *pdata);
 uchar uart_tx_bytes(uchar *pdata, uchar len);

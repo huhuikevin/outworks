@@ -11,6 +11,7 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 
 #include <hic.h>
 #include "type.h"
+#include "system.h"
 #include "tool.h"
 #include "plc.h"
 #include "linklay.h"
@@ -106,9 +107,11 @@ section6 sLinklayCtrl linklay[MacTypeEnd]@0x300;
 
 void linklay_send_process();
 void linklay_recv_process();
-int8u mac_rx_bytes();
+
 int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num);
 
+int8u linklay_rx();
+int8u mac_rx_bytes(int8u mac_type, Plinklay_Frame pFrame);
 
 void linklay_init()
 {

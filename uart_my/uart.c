@@ -11,6 +11,8 @@ Description: Define all the function which related to the serial communicaitons.
 #include "tool.h"
 #include "config.h"
 
+#define UART_BUFFER_LENGTH 	MSG_MAX_LEN
+
 typedef struct
 {
 	uchar Recv_start:1;					//串口正在接收标识
@@ -49,7 +51,6 @@ do{\
 }while(0);
 
 #define UART_TIMEOUT 1//MS
-#define UART_BUFFER_LENGTH 	MSG_MAX_LEN
 
 //section64 volatile uart_register uart[3]@0xFFE0;
 uart_register uart[3];
@@ -76,7 +77,7 @@ uchar Calc_baud(int16u baud)
 }
 void UartInit(uchar uartIdx, int16u baudrate)						//Rcv function of Uart reset
 {
-	uart[uartIdx].TXM = 0;// 8bit data tx
+	uart[uartIdx].TxM = 0;// 8bit data tx
 	uart[uartIdx].RxM= 0;// 8bit data rx
 	uart[uartIdx].RxEN= 1;
 	uart[uartIdx].TxEN = 1;
@@ -225,7 +226,7 @@ uchar Uart0_Rx()
 	if (RX1IF == 0) {
 		return 0;
 	}
-	UartRecv[0].UartRecv_start = 0;
+	UartRecv[0].Recv_start = 0;
 	UartRecv[0].Recv_finish = 0;
 	rlen = 0;
 	do {
@@ -263,7 +264,7 @@ uchar Uart1_Rx()
 	if (RX1IF == 0) {
 		return 0;
 	}
-	UartRecv[1].UartRecv_start = 0;
+	UartRecv[1].Recv_start = 0;
 	UartRecv[1].Recv_finish = 0;
 	rlen = 0;
 	do {
@@ -301,7 +302,7 @@ uchar Uart2_Rx()
 	if (RX1IF == 0) {
 		return 0;
 	}
-	UartRecv[2].UartRecv_start = 0;
+	UartRecv[2].Recv_start = 0;
 	UartRecv[2].Recv_finish = 0;
 	rlen = 0;
 	do {
@@ -340,6 +341,6 @@ void SetBaud(uchar uartIdx, int16u  baud)
 
 void serial_data_init(uchar idx)
 {
-    MMemSet((int8u *)&UartRecv[idx],0,sizeof(UartRecv_Buf));
+    MMemSet((int8u *)&UartRecv[idx],0,sizeof(UARTRECV_BUFFER));
    
 }

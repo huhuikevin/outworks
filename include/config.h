@@ -4,8 +4,8 @@
 
 #define CONFIG_UART 1
 
-#ifdef #define CONFIG_UART 1
-#define CONFIG_LINKLAY_UART 0 // 定义哪个uart口用作link层通信用
+#ifdef CONFIG_UART
+//#define CONFIG_LINKLAY_UART 0 // 定义哪个uart口用作link层通信用
 
 //#define CONFIG_CONSOLE 1 // 系统console口使能
 
@@ -16,4 +16,5 @@
 
 //#define CONFIG_W2_4G 1
 #endif/* __CONFIG__H_ */
+
 

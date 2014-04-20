@@ -26,13 +26,13 @@ void timer8n_init(void) // timer 8n run as 1ms
  	global_timer=0;
 }
 
-uchar Timetick(void)
+int16u Timetick(void)
 {
 	timer8N();
 	return global_timer;
 }
 
-sbin IsTimeOut(int16u timeout)
+sbit IsTimeOut(int16u timeout)
 {
 	timer8N();
 	if (timeout < global_timer)

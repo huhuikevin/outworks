@@ -5,14 +5,13 @@
 #include "tool.h"
 #include "timer8n.h"
 
-#ifdef SERIAL_INTF
-void serial_driver_txrx(void);
-void serial_process(void);
+#ifdef CONFIG_LINKLAY_UART
+void uart_driver_process(void);
 #endif
-#ifdef W24G    
-void w2_4mac_driver_txrx(void);
+#ifdef CONFIG_W2_4G    
+void w2_4mac_driver_process(void);
 #endif    
-void plc_driver_txrx(void);
+void plc_driver_process(void);
 void linklay_process(void);
 void app_process(void);
 
