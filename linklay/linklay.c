@@ -72,7 +72,7 @@ typedef struct
     int8u send_statmachine :2;
     int8u send_seq:4;
     int8u frame_state:4;
-    int32u recv_overflow;
+    int8u recv_overflow;
     linklay_Frame send_frame;
     linklay_Frame recv_frame;
 }sLinklayCtrl, *PsLinklayCtrl;
@@ -238,7 +238,7 @@ void linklay_recv_process()
 
 void linklay_process()
 {
-    if (mac_rx_bytes() != 0) {
+    if (linklay_rx() != 0) {
         //linklay_recv_data();
         linklay_recv_process();
     }
@@ -250,23 +250,11 @@ void linklay_setmac(uchar mactype)
     G_macType = mactype;    
 }
 
-
-int8u linklay_rx(int8u mac_type, Plinklay_Frame pFrame)
-{
-    if (mac_type == MacPlc)
-        return plc_rx_bytes((uchar *)pFrame);
-#ifdef W24G
-    else if (mac_type == MacWireless_2_4G)
-        return wireless_2_4G_rx_byte((uchar *)pFrame);
-#endif
-    return 0;
-}
-
-int8u mac_rx_bytes()
+int8u linklay_rx()
 {
     int8u len, i,tlen=0;
     for (i = MacPlc; i < MacTypeEnd; i++) {
-        len = linklay_rx(i, &linklay[i].recv_frame);
+        len = mac_rx_bytes(i, &linklay[i].recv_frame);
         if (len) {
             if (linklay[i].recv_bytes != 0)
             linklay[i].recv_overflow ++;
@@ -278,13 +266,24 @@ int8u mac_rx_bytes()
     return tlen;    
 }
 
+int8u mac_rx_bytes(int8u mac_type, Plinklay_Frame pFrame)
+{
+    if (mac_type == MacPlc)
+        return plc_rx_bytes((uchar *)pFrame);
+#ifdef CONFIG_W2_4G
+    else if (mac_type == MacWireless_2_4G)
+        return wireless_2_4G_rx_byte((uchar *)pFrame);
+#endif
+    return 0;
+}
+
 int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num)
 {
     uchar realsend;
     
     if (mac_type == MacPlc)
         realsend = plc_tx_bytes(pdata, num);
-#ifdef W24G         
+#ifdef CONFIG_W2_4G         
     else if (mac_type == MacWireless_2_4G)
         realsend = wireless_2_4G_tx_bytes(pdata, num);
 #endif    

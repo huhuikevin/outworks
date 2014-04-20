@@ -18,31 +18,25 @@ void app_process(void);
 
 void sys_app_process()
 {
-#ifdef SERIAL_INTF    
+#ifdef CONFIG_UART    
     /* UART 、SPI 收发处理,驱动层*/
-    serial_driver_txrx();
+    uart_driver_process();
     watchdog();
     //timer8N();
 #endif    
     /* plc mac层收发处理，驱动层 */
-    plc_driver_txrx();
+    plc_driver_process();
     watchdog();
     //timer8N();
-#ifdef W24G    
+#ifdef CONFIG_W2_4G    
     /* 2.4G mac层收发处理，驱动层 */
-    w2_4mac_driver_txrx();
+    w2_4mac_driver_process();
     watchdog();
 #endif    
     /* 链路层处理，包括了plc和2.4G或其他的协议 */
     linklay_process();
     watchdog();
     //timer8N();
-#ifdef SERIAL_INTF    
-    /* UART,SPI 数据包处理，处理链路头等信息 */
-    serial_process();
-    watchdog();
-    //timer8N();
-#endif    
     /* 上层处理，和具体的产品相关 */
     app_process();
     watchdog(); 

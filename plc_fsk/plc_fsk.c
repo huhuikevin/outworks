@@ -1779,7 +1779,7 @@ void plc_init(void)
 	Plc_ZeroMode = 0;
 }
 
-void plc_driver_txrx(void)
+void plc_driver_process(void)
 {
     watchdog();
     

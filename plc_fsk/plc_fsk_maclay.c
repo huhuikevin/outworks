@@ -1802,7 +1802,7 @@ void plc_init(void)
     continue_1bit_cnt = 0;         
 }
 
-void plc_driver_txrx(void)
+void plc_driver_process(void)
 {
     watchdog();
     
