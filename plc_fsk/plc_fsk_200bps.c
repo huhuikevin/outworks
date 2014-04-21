@@ -1030,7 +1030,7 @@ void rcv_normal_data(void)   /*正常接收*/
 			r_sync_bit=0;
 			plc_byte_data=0;
 			R_LED = 1;
-			//plc_recv_finished();
+			plc_recv_finished();
 		}
 	}	/*还未接收完*/
 	//Plc_data_bit_cnt=8;
@@ -1974,8 +1974,8 @@ void T16G1Int_Proc(void)
 
 void T16G2Int_Proc(void)
 {	
-	if (Rec_Zero_bz) //for debug
-    PB5 = 1;
+	//if (Rec_Zero_bz) //for debug
+    //PB5 = 1;
     if(Plc_Mode=='T')
     {
     //        Uart_rec1Point=0;
