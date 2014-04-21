@@ -1,9 +1,11 @@
 #include <hic.h>
+#include "config.h"
 #include "type.h"
 #include "tool.h"
 #include "soc_25xx.h"
 #include "plc.h"
 #include "timer8n.h"
+#include "uart.h"
 
 void iniSCI(void)
 {
@@ -37,4 +39,14 @@ void board_init()
     IO_Init();
     plc_init(); 
     timer8n_init();
+
+#ifdef CONFIG_LINKLAY_UART	
+	UartInit(CONFIG_LINKLAY_UART, 9600);
+#endif
+
+#ifdef CONFIG_CONSOLE_UART
+	UartInit(CONFIG_CONSOLE_UART, 9600);
+#endif
 }
+
+

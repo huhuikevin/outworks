@@ -52,8 +52,8 @@ do{\
 
 #define UART_TIMEOUT 1//MS
 
-//section64 volatile uart_register uart[3]@0xFFE0;
-uart_register uart[3];
+section64 volatile uart_register uart[3]@0xFFE0;
+//uart_register uart[3];
 section10 UARTRECV_BUFFER  UartRecv[3]@0X500;
 
 
@@ -95,7 +95,7 @@ uchar uart_rx_bytes(uchar *pdata)
 	if (UartRecv[CONFIG_LINKLAY_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_LINKLAY_UART].Recv_Len-1;
-		MMemcpy(pdata,&UartRecv[CONFIG_LINKLAY_UART]Recv_Buf[1],rlen)
+		MMemcpy(pdata,&UartRecv[CONFIG_LINKLAY_UART].Recv_Buf[1],rlen);
 		UartRecv[CONFIG_LINKLAY_UART].Recv_finish = 0;
 	}
 	return rlen;
@@ -125,7 +125,7 @@ uchar console_uart_rx_bytes(uchar *pdata)
 	if (UartRecv[CONFIG_CONSOLE_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_CONSOLE_UART].Recv_Len-1;
-		MMemcpy(pdata,&UartRecv[CONFIG_CONSOLE_UART]Recv_Buf[1],rlen)
+		MMemcpy(pdata,&UartRecv[CONFIG_CONSOLE_UART].Recv_Buf[1],rlen);
 		UartRecv[CONFIG_CONSOLE_UART].Recv_finish = 0;
 	}
 	return rlen;
