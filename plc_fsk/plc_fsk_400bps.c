@@ -38,7 +38,7 @@
 #define Sync_Char  0xaf
 #define Pn7_Con1   0X17
 
-#define RECV_BITS 24
+#define RECV_BITS 23
 
 static volatile   section64  sbit  PLC_FSK_RXD      @ (unsigned) &PLC_MOD* 8 + 3 ;
 
@@ -58,6 +58,9 @@ section21 uchar Bit1Num_T1[64]@0xac0;
 
 uchar  SYM_offset,SYCl_offset;
 uchar  SYM_offset2,SYCl_offset2;
+uchar  SYM_offset3,SYCl_offset3;
+uchar  SYM_offset4,SYCl_offset4;
+
 uchar  Sync_Step;
 
 uchar  plc_byte_data,sync_word_l;
@@ -99,17 +102,6 @@ do{\
   	T16G1IE=1;\
 }while(0);
 
-#define plc_restart_sync() \
-do{\
-	T16G2IE=0;\
-  	Plc_Mode=0;\
-  	Work_step=0;\
-  	Sync_Step=0;\
-  	Plc_SyncBZ=0;\
-	r_sync_bit = 0;\
-   T16G1IF=0;\
-  	T16G1IE=1;\
-}while(0);
 
 #define plc_recv_finished()\
 do{\
@@ -130,7 +122,7 @@ do {\
 	}\
 }while(0);
 
-#define do_left_shift_1bit1(b) \
+#define do_left_shift_1bit_1(b) \
 do {\
 	BitData_T1[b]<<=1;\
 	if(BitData_T1[b+1]&0x80) \
@@ -434,85 +426,51 @@ void Delay(uint MS)
     }
 }
 
-#define  delay16t()    NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP()NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP()
-#define  delay8t()    NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP()
-#define  delay4t()    NOP();NOP();NOP();NOP();
-#define  delay14t()   NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP(); NOP();NOP();NOP();NOP();NOP();NOP() 
-void delay5us(void)
+//#define  delay6t()    NOP();NOP();NOP();NOP();NOP();NOP()
+//#define  delay8t()    NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP()
+//#define  delay4t()    NOP();NOP();NOP();NOP();
+//#define  delay7t()   NOP();NOP();NOP();NOP();NOP();NOP();NOP();
+
+void delay6t()
+{
+	NOP();
+}
+
+void delay7t()
+{
+	NOP();
+	NOP();
+}
+
+
+void delay2_5us(void)
 {
     NOP();NOP();NOP();NOP();NOP();
     NOP();NOP();NOP();NOP();NOP();
     NOP();NOP();NOP();NOP();NOP();
     NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-
-    //NOP();NOP();NOP();
-    //NOP();NOP();
 }
-void delay4us(void)
-{
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    NOP();NOP();NOP();NOP();NOP();
-    // NOP();NOP();NOP();NOP();NOP();
-    // NOP();NOP();NOP();NOP();NOP();
 
-    //NOP();NOP();NOP();
-    //NOP();NOP();
-}
 // 1位发送间隔时间 66.7uS == 667T
 void DelayBit()	// 109x6=654 + 13T = 667T
 {
     uchar bb;
-    for(bb=109;bb!=0;bb--)		//每次6T
+    for(bb=108;bb!=0;bb--)		//每次6T
  	{
         NOP();
  	}
+	NOP();
+	NOP();
+	NOP();
+	NOP();
+	NOP();
 }
 
-/************************************
-** 函数原型: void Delay(uchar MS); **
-** 功    能: 延时time=MS*4 ms.     **
-************************************/
-void Delay10ms(void)
+
+void plc_restart_sync()
 {
-    uchar ucA,ucB;
-    for(ucA=0;ucA<40;ucA++) 
-        for(ucB=0;ucB<0xf0;ucB++);
+	plc_restart();
 }
-
-
-void  Sum_DM15(void )
-{
-    uchar ucS1,ucS0;
-    ucS1=Bit1Num_T[1];
-    ucS1+=Bit1Num_T[3];
-    ucS1+=Bit1Num_T[4];
-    ucS1+=Bit1Num_T[7];
-    ucS1+=Bit1Num_T[11];
-    ucS1+=Bit1Num_T[12];
-    ucS1+=Bit1Num_T[13];
-    ucS1+=Bit1Num_T[14];
-    
-    ucS0=Bit1Num_T[0];	
-    ucS0+=Bit1Num_T[2];	
-    ucS0+=Bit1Num_T[5];	
-    ucS0+=Bit1Num_T[6];	
-    ucS0+=Bit1Num_T[8];	
-    ucS0+=Bit1Num_T[9];	
-    ucS0+=Bit1Num_T[10];
-     
-    ZXDM=ucS1+56-ucS0;
-}
-
 
 void  Sum_DM21_Sync(uchar offset )
 {
@@ -698,7 +656,7 @@ void  Sum_DM21_Sync2(uchar offset )
     FXDM=168-ZXDM;
 }
 
-void  Sum_DM21_Sync(uchar offset )
+void  Sum_DM21_Sync3(uchar offset )
 {
     uchar ucS1,ucS0;
     switch(offset)
@@ -901,7 +859,7 @@ sbit Recv_Bit()
 *******21PN
 *******数据1扩频发送**********/
 
-void TX1_PN21(void)
+void TX1_PN23(void)
 { 
     TX_Bit1()      ;//1 		//多发1个无用的 0520
 	DelayBit();
@@ -977,7 +935,7 @@ void TX1_PN21(void)
 *******21PN   两位间发送间隔1332T
 *******数据0扩频发送**********/
 
-void TX0_PN21(void)
+void TX0_PN23(void)
 {   
     TX_Bit0()      ;//1    多发1BIT 0520
 	DelayBit();
@@ -1136,17 +1094,18 @@ void rcv_normal_data(void)   /*正常接收*/
 	//Plc_data_bit_cnt=8;
 }
 
-
-void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
+/*加call指令，本函数647T */
+void Recv_Plc_8Bit(void)		//667采样8次,83T和84T间隔采样
 {
 	uchar ucA;
 	Plc_Samples_byte=0;	
-	Plc_Samples_bit1_cnt=0;	
-	delay5us();
-	delay14t();
-	delay14t();
+	Plc_Samples_bit1_cnt=0;	/* 3T */
+	
+	delay2_5us();
+	delay7t();
+	delay7t();
 	   
-	Plc_Samples_byte<<=1; // 2T
+	Plc_Samples_byte<<=1; /* 2T */
 	if(PLC_FSK_RXD)    /*  5T */
 	{	
         Plc_Samples_byte|=0x01;
@@ -1157,11 +1116,11 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
         NOP();
         NOP();
     }
-	delay5us();     	
-	delay5us();
-	delay5us();
+	delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
-	//   NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD) 
 	{	
@@ -1172,13 +1131,13 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
 	NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{
@@ -1189,13 +1148,12 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
-	//   NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{	
@@ -1206,13 +1164,13 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
 	NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{	
@@ -1223,13 +1181,12 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-       	NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
-	//   NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{	
@@ -1240,13 +1197,13 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
 	NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{	
@@ -1257,12 +1214,12 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay5us();     	
-	delay5us();
-	delay5us();
+    delay2_5us();     	
+	delay2_5us();
+	delay2_5us();
 	NOP();
+
 	Plc_Samples_byte<<=1;
 	if(PLC_FSK_RXD)
 	{
@@ -1273,705 +1230,688 @@ void Recv_Plc_8Bit(void)		//1332t采样8次,166T和167间隔采样
     {
         NOP();
         NOP();
-        NOP();
     }
-    delay14t();
+    delay7t();
     NOP();
 	NOP();
-    NOP();
-    NOP();
-    NOP();
     NOP();
 }
 
-void Recv_Plc_78Bit(void)		//1332t采样8次,166T和167间隔采样
+
+void  Recv_23Pn(void)
 {
-	uchar ucA;
-	Plc_Samples_byte=0;	
-	Plc_Samples_bit1_cnt=0;	
-	delay5us();
-	delay14t();
-	delay14t();
-	   
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD) 
-	{	
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-	delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	//   NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD) 
-	{	
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-    delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD)
-	{
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-    delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	//   NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD)
-	{	
-        Plc_Samples_byte|=0x01;
-	  	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-    delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD)
-	{	
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-       	NOP();
-    }
-    delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	//   NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD)
-	{	
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-    delay5us();     	
-	delay5us();
-	delay5us();
-	NOP();
-	NOP();
-	Plc_Samples_byte<<=1;
-	if(PLC_FSK_RXD)
-	{	
-        Plc_Samples_byte|=0x01;
-	 	Plc_Samples_bit1_cnt++;
-    } 
-    else
-    {
-        NOP();
-        NOP();
-        NOP();
-    }
-
-}
-
-void  Recv_25Pn(void)
-{
-
-#if 1
-    STA=0;
-    //* 0512
-    Recv_Plc_78Bit();				
-	Bit1Num_T[0]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[0]=Plc_Samples_byte;	
-	
-       delay14t();
-    	delay14t();
-    	delay14t();
-    	NOP();
-       NOP();
-        NOP();        
-#endif	
-    //*     0512
+    /*  647T +3T +4T +13T =667T == one bit time */
 	Recv_Plc_8Bit();				
-	Bit1Num_T[0]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[0]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	Bit1Num_T[0]=Plc_Samples_bit1_cnt;	/* 3T */
+	BitData_T[0]=Plc_Samples_byte;	    /* 4T */
+	delay7t();
+	delay6t();
              
 	Recv_Plc_8Bit();				
 	Bit1Num_T[1]=Plc_Samples_bit1_cnt;	//1的个数
 	BitData_T[1]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-	NOP();
-	NOP();
+	delay7t();
+	delay6t();
+
 	  
 	Recv_Plc_8Bit();				
 	Bit1Num_T[2]=Plc_Samples_bit1_cnt;	//1的个数
 	BitData_T[2]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
 	
     Recv_Plc_8Bit();				
 	Bit1Num_T[3]=Plc_Samples_bit1_cnt;	//1的个数
 	BitData_T[3]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
 	
     Recv_Plc_8Bit();				
 	Bit1Num_T[4]=Plc_Samples_bit1_cnt;	//1的个数
 	BitData_T[4]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
 	  	
     Recv_Plc_8Bit();				
     Bit1Num_T[5]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[5]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
        
     Recv_Plc_8Bit();				
     Bit1Num_T[6]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[6]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[7]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[7]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[8]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[8]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[9]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[9]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[10]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[10]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[11]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[11]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[12]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[12]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[13]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[13]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
         
     Recv_Plc_8Bit();				
     Bit1Num_T[14]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[14]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t(); 
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
         
     Recv_Plc_8Bit();				
     Bit1Num_T[15]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[15]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
              
     Recv_Plc_8Bit();				
     Bit1Num_T[16]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[16]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
              
     Recv_Plc_8Bit();				
     Bit1Num_T[17]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[17]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
             
     Recv_Plc_8Bit();				
     Bit1Num_T[18]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[18]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
      
     Recv_Plc_8Bit();				
     Bit1Num_T[19]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[19]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    // delay14t();
-    PLC_RW=0x01; 	 	
-    PLC_ADDR=0x51;
-    RSSIV=PLC_DATA; 
-    PLC_RW=0x00;
+    delay4t();
+    PLC_RW=0x01; /* 2T */
+    PLC_ADDR=0x51; /* 2T */
+    RSSIV=PLC_DATA;  /* 3T */
+    PLC_RW=0x00;  /* 1T */
     NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[20]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[20]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
       
     Recv_Plc_8Bit();				
     Bit1Num_T[21]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[21]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
     Bit1Num_T[22]=Plc_Samples_bit1_cnt;	//1的个数
     BitData_T[22]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[23]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[23]=Plc_Samples_byte;
-#if 0	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[25]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[25]=Plc_Samples_byte;	
-    //STA=1;	 
-    //RSSIBit_buf[Plc_data_bit_cnt-1]=RSSIV; 
-#endif	
+	delay7t();
+	delay6t();
+
 }
 
 
-void  Recv_sec_25Pn(void)
+void  Recv_1_23Pn(void)
 {
-    //*     0512
+    /*  647T +3T +4T +13T =667T == one bit time */
 	Recv_Plc_8Bit();				
-	Bit1Num_T[24]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[24]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	Bit1Num_T[RECV_BITS]=Plc_Samples_bit1_cnt;	/* 3T */
+	BitData_T[RECV_BITS]=Plc_Samples_byte;	    /* 4T */
+	delay7t();
+	delay6t();
              
 	Recv_Plc_8Bit();				
-	Bit1Num_T[1+24]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[1+24]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-	NOP();
-	NOP();
+	Bit1Num_T[1+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[1+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
 	  
 	Recv_Plc_8Bit();				
-	Bit1Num_T[2+24]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[2+24]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	Bit1Num_T[2+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[2+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
 	
     Recv_Plc_8Bit();				
-	Bit1Num_T[3+24]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[3+24]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	Bit1Num_T[3+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[3+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
 	
     Recv_Plc_8Bit();				
-	Bit1Num_T[4+24]=Plc_Samples_bit1_cnt;	//1的个数
-	BitData_T[4+24]=Plc_Samples_byte;	
-	delay14t();
-	delay14t();
-	delay14t();
-	NOP();
-    NOP();
-    NOP();
+	Bit1Num_T[4+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[4+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
 	  	
     Recv_Plc_8Bit();				
-    Bit1Num_T[5+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[5+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[5+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[5+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
        
     Recv_Plc_8Bit();				
-    Bit1Num_T[6+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[6+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[6+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[6+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[7+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[7+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[7+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[7+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[8+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[8+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[8+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[8+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[9+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[9+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[9+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[9+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[10+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[10+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[10+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[10+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[11+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[11+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[11+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[11+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[12+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[12+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[12+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[12+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[13+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[13+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[13+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[13+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
         
     Recv_Plc_8Bit();				
-    Bit1Num_T[14+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[14+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t(); 
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[14+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[14+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
         
     Recv_Plc_8Bit();				
-    Bit1Num_T[15+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[15+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[15+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[15+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
              
     Recv_Plc_8Bit();				
-    Bit1Num_T[16+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[16+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[16+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[16+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
              
     Recv_Plc_8Bit();				
-    Bit1Num_T[17+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[17+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[17+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[17+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
             
     Recv_Plc_8Bit();				
-    Bit1Num_T[18+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[18+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[18+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[18+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
      
     Recv_Plc_8Bit();				
-    Bit1Num_T[19+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[19+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    // delay14t();
-    PLC_RW=0x01; 	 	
-    PLC_ADDR=0x51;
-    RSSIV=PLC_DATA; 
-    PLC_RW=0x00;
+    Bit1Num_T[19+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[19+RECV_BITS]=Plc_Samples_byte;	
+    delay4t();
+    PLC_RW=0x01; /* 2T */
+    PLC_ADDR=0x51; /* 2T */
+    RSSIV=PLC_DATA;  /* 3T */
+    PLC_RW=0x00;  /* 1T */
     NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
-    NOP();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[20+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[20+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[20+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[20+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
       
     Recv_Plc_8Bit();				
-    Bit1Num_T[21+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[21+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
+    Bit1Num_T[21+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[21+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
     
     Recv_Plc_8Bit();				
-    Bit1Num_T[22+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[22+24]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[23+24]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[23+24]=Plc_Samples_byte;	
-#if 0	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[24+26]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[24+26]=Plc_Samples_byte;	
-    delay14t();
-    delay14t();
-    delay14t();
-    NOP();
-    NOP();
-    NOP();
-     
-    Recv_Plc_8Bit();				
-    Bit1Num_T[25+26]=Plc_Samples_bit1_cnt;	//1的个数
-    BitData_T[25+26]=Plc_Samples_byte;	
-    STA=1;	 
-    RSSIBit_buf[Plc_data_bit_cnt-1]=RSSIV;  	
-#endif	
+    Bit1Num_T[22+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[22+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
 }
 
+
+void  Recv_2_23Pn(void)
+{
+    /*  647T +3T +4T +13T =667T == one bit time */
+	Recv_Plc_8Bit();				
+	Bit1Num_T[0]=Plc_Samples_bit1_cnt;	/* 3T */
+	BitData_T[0]=Plc_Samples_byte;	    /* 4T */
+	delay7t();
+	delay6t();
+             
+	Recv_Plc_8Bit();				
+	Bit1Num_T[1]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[1]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	  
+	Recv_Plc_8Bit();				
+	Bit1Num_T[2]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[2]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	
+    Recv_Plc_8Bit();				
+	Bit1Num_T[3]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[3]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	
+    Recv_Plc_8Bit();				
+	Bit1Num_T[4]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[4]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	  	
+    Recv_Plc_8Bit();				
+    Bit1Num_T[5]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[5]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+       
+    Recv_Plc_8Bit();				
+    Bit1Num_T[6]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[6]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[7]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[7]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[8]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[8]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[9]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[9]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[10]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[10]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[11]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[11]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[12]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[12]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[13]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[13]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+        
+    Recv_Plc_8Bit();				
+    Bit1Num_T[14]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[14]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+        
+    Recv_Plc_8Bit();				
+    Bit1Num_T[15]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[15]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+             
+    Recv_Plc_8Bit();				
+    Bit1Num_T[16]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[16]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+             
+    Recv_Plc_8Bit();				
+    Bit1Num_T[17]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[17]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+            
+    Recv_Plc_8Bit();				
+    Bit1Num_T[18]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[18]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+     
+    Recv_Plc_8Bit();				
+    Bit1Num_T[19]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[19]=Plc_Samples_byte;	
+    delay4t();
+    PLC_RW=0x01; /* 2T */
+    PLC_ADDR=0x51; /* 2T */
+    RSSIV=PLC_DATA;  /* 3T */
+    PLC_RW=0x00;  /* 1T */
+    NOP();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[20]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[20]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+      
+    Recv_Plc_8Bit();				
+    Bit1Num_T[21]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[21]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[22]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[22]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+}
+
+
+void  Recv_3_23Pn(void)
+{
+    /*  647T +3T +4T +13T =667T == one bit time */
+	Recv_Plc_8Bit();				
+	Bit1Num_T[RECV_BITS]=Plc_Samples_bit1_cnt;	/* 3T */
+	BitData_T[RECV_BITS]=Plc_Samples_byte;	    /* 4T */
+	delay7t();
+	delay6t();
+             
+	Recv_Plc_8Bit();				
+	Bit1Num_T[1+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[1+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	  
+	Recv_Plc_8Bit();				
+	Bit1Num_T[2+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[2+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	
+    Recv_Plc_8Bit();				
+	Bit1Num_T[3+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[3+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	
+    Recv_Plc_8Bit();				
+	Bit1Num_T[4+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+	BitData_T[4+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+	  	
+    Recv_Plc_8Bit();				
+    Bit1Num_T[5+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[5+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+       
+    Recv_Plc_8Bit();				
+    Bit1Num_T[6+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[6+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[7+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[7+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[8+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[8+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[9+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[9+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[10+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[10+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[11+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[11+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[12+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[12+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[13+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[13+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+        
+    Recv_Plc_8Bit();				
+    Bit1Num_T[14+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[14+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+        
+    Recv_Plc_8Bit();				
+    Bit1Num_T[15+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[15+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+             
+    Recv_Plc_8Bit();				
+    Bit1Num_T[16+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[16+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+             
+    Recv_Plc_8Bit();				
+    Bit1Num_T[17+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[17+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+            
+    Recv_Plc_8Bit();				
+    Bit1Num_T[18+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[18+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+     
+    Recv_Plc_8Bit();				
+    Bit1Num_T[19+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[19+RECV_BITS]=Plc_Samples_byte;	
+    delay4t();
+    PLC_RW=0x01; /* 2T */
+    PLC_ADDR=0x51; /* 2T */
+    RSSIV=PLC_DATA;  /* 3T */
+    PLC_RW=0x00;  /* 1T */
+    NOP();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[20+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[20+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+      
+    Recv_Plc_8Bit();				
+    Bit1Num_T[21+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[21+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+    
+    Recv_Plc_8Bit();				
+    Bit1Num_T[22+RECV_BITS]=Plc_Samples_bit1_cnt;	//1的个数
+    BitData_T[22+RECV_BITS]=Plc_Samples_byte;	
+	delay7t();
+	delay6t();
+
+}
 
 
 
@@ -2316,27 +2256,14 @@ void Sync_adjust(void)
     uchar ucB,ucC;
     for(ucB=0;ucB<SYCl_offset;ucB++) 				//约13335T
     {
-    #if 0
-        for(ucC=SYM_offset;ucC<23;ucC++)
-        {        
-            BitData_T[ucC]<<=1;
-            if(BitData_T[ucC+1]&0x80) 
-            {
-                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
-	            Bit1Num_T[ucC]++;
-                Bit1Num_T[ucC+1]--;
-            }  
-        }
-	#else
-			if (0 == SYM_offset)
-				Sync_offset(0);
-			if (1 == SYM_offset)
-				Sync_offset(1);
-			if (2 == SYM_offset)
-				Sync_offset(2);
-			else
-				Sync_offset(2);	
-	#endif
+		if (0 == SYM_offset)
+			Sync_offset(0);
+		if (1 == SYM_offset)
+			Sync_offset(1);
+		if (2 == SYM_offset)
+			Sync_offset(2);
+		else
+			Sync_offset(2);	
     }
 }
 
@@ -2345,32 +2272,32 @@ void Sync_offset2(uchar off)
 	switch(off)
 	{
 		case 0:
-			do_left_shift_1bit(0+24);
+			do_left_shift_1bit(0+RECV_BITS);
 		case 1:
-			do_left_shift_1bit(1+24);
+			do_left_shift_1bit(1+RECV_BITS);
 		case 2:
-			do_left_shift_1bit(2+24);
+			do_left_shift_1bit(2+RECV_BITS);
 		default:
-			do_left_shift_1bit(3+24);
-			do_left_shift_1bit(4+24);
-			do_left_shift_1bit(5+24);
-			do_left_shift_1bit(6+24);
-			do_left_shift_1bit(7+24);
-			do_left_shift_1bit(8+24);
-			do_left_shift_1bit(9+24);
-			do_left_shift_1bit(10+24);
-			do_left_shift_1bit(11+24);
-			do_left_shift_1bit(12+24);
-			do_left_shift_1bit(13+24);
-			do_left_shift_1bit(14+24);
-			do_left_shift_1bit(15+24);
-			do_left_shift_1bit(16+24);
-			do_left_shift_1bit(17+24);
-			do_left_shift_1bit(18+24);
-			do_left_shift_1bit(19+24);
-			do_left_shift_1bit(20+24);
-			do_left_shift_1bit(21+24);
-			do_left_shift_1bit(22+24);
+			do_left_shift_1bit(3+RECV_BITS);
+			do_left_shift_1bit(4+RECV_BITS);
+			do_left_shift_1bit(5+RECV_BITS);
+			do_left_shift_1bit(6+RECV_BITS);
+			do_left_shift_1bit(7+RECV_BITS);
+			do_left_shift_1bit(8+RECV_BITS);
+			do_left_shift_1bit(9+RECV_BITS);
+			do_left_shift_1bit(10+RECV_BITS);
+			do_left_shift_1bit(11+RECV_BITS);
+			do_left_shift_1bit(12+RECV_BITS);
+			do_left_shift_1bit(13+RECV_BITS);
+			do_left_shift_1bit(14+RECV_BITS);
+			do_left_shift_1bit(15+RECV_BITS);
+			do_left_shift_1bit(16+RECV_BITS);
+			do_left_shift_1bit(17+RECV_BITS);
+			do_left_shift_1bit(18+RECV_BITS);
+			do_left_shift_1bit(19+RECV_BITS);
+			do_left_shift_1bit(20+RECV_BITS);
+			do_left_shift_1bit(21+RECV_BITS);
+			do_left_shift_1bit(22+RECV_BITS);
 			break;
 		}
 }
@@ -2383,18 +2310,6 @@ void Sync_adjust2(void)
     uchar ucB,ucC;
     for(ucB=0;ucB<SYCl_offset2;ucB++) 				//约13335T
     {
-    #if 0
-        for(ucC=SYM_offset2+24;ucC<23+24;ucC++)
-        {       
-            BitData_T[ucC]<<=1;
-            if(BitData_T[ucC+1]&0x80) 
-            {
-                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
-	            Bit1Num_T[ucC]++;
-                Bit1Num_T[ucC+1]--;
-            }  
-        }
-		#else
 		if (0 == SYM_offset2)
 			Sync_offset2(0);
 		if (1 == SYM_offset2)
@@ -2402,21 +2317,133 @@ void Sync_adjust2(void)
 		if (2 == SYM_offset2)
 			Sync_offset2(2);
 		else
-			Sync_offset2(2);
-
-		#endif		
+			Sync_offset2(2);		
     }
 }
-int16u bitcnt = 0;
+
+void Sync_offset3(uchar off)
+{
+switch(off)
+{
+	case 0:
+		do_left_shift_1bit_1(0);
+	case 1:
+		do_left_shift_1bit_1(1);
+	case 2:
+		do_left_shift_1bit_1(2);
+	default:
+		do_left_shift_1bit_1(3);
+		do_left_shift_1bit_1(4);
+		do_left_shift_1bit_1(5);
+		do_left_shift_1bit_1(6);
+		do_left_shift_1bit_1(7);
+		do_left_shift_1bit_1(8);
+		do_left_shift_1bit_1(9);
+		do_left_shift_1bit_1(10);
+		do_left_shift_1bit_1(11);
+		do_left_shift_1bit_1(12);
+		do_left_shift_1bit_1(13);
+		do_left_shift_1bit_1(14);
+		do_left_shift_1bit_1(15);
+		do_left_shift_1bit_1(16);
+		do_left_shift_1bit_1(17);
+		do_left_shift_1bit_1(18);
+		do_left_shift_1bit_1(19);
+		do_left_shift_1bit_1(20);
+		do_left_shift_1bit_1(21);
+		do_left_shift_1bit_1(22);
+		break;
+}
+}
+
+
+void Sync_adjust3(void)
+{
+    uchar ucB,ucC;
+    for(ucB=0;ucB<SYCl_offset3;ucB++) 				//约13335T
+    {
+		if (0 == SYM_offset3)
+			Sync_offset3(0);
+		if (1 == SYM_offset3)
+			Sync_offset3(1);
+		if (2 == SYM_offset3)
+			Sync_offset3(2);
+		else
+			Sync_offset3(2);	
+    }
+}
+
+
+void Sync_offset4(uchar off)
+{
+	switch(off)
+	{
+		case 0:
+			do_left_shift_1bit_1(0+RECV_BITS);
+		case 1:
+			do_left_shift_1bit_1(1+RECV_BITS);
+		case 2:
+			do_left_shift_1bit_1(2+RECV_BITS);
+		default:
+			do_left_shift_1bit_1(3+RECV_BITS);
+			do_left_shift_1bit_1(4+RECV_BITS);
+			do_left_shift_1bit_1(5+RECV_BITS);
+			do_left_shift_1bit_1(6+RECV_BITS);
+			do_left_shift_1bit_1(7+RECV_BITS);
+			do_left_shift_1bit_1(8+RECV_BITS);
+			do_left_shift_1bit_1(9+RECV_BITS);
+			do_left_shift_1bit_1(10+RECV_BITS);
+			do_left_shift_1bit_1(11+RECV_BITS);
+			do_left_shift_1bit_1(12+RECV_BITS);
+			do_left_shift_1bit_1(13+RECV_BITS);
+			do_left_shift_1bit_1(14+RECV_BITS);
+			do_left_shift_1bit_1(15+RECV_BITS);
+			do_left_shift_1bit_1(16+RECV_BITS);
+			do_left_shift_1bit_1(17+RECV_BITS);
+			do_left_shift_1bit_1(18+RECV_BITS);
+			do_left_shift_1bit_1(19+RECV_BITS);
+			do_left_shift_1bit_1(20+RECV_BITS);
+			do_left_shift_1bit_1(21+RECV_BITS);
+			do_left_shift_1bit_1(22+RECV_BITS);
+			break;
+		}
+}
+
+
+
+
+void Sync_adjust4(void)
+{
+    uchar ucB,ucC;
+    for(ucB=0;ucB<SYCl_offset4;ucB++) 				//约13335T
+    {
+		if (0 == SYM_offset4)
+			Sync_offset4(0);
+		if (1 == SYM_offset4)
+			Sync_offset4(1);
+		if (2 == SYM_offset4)
+			Sync_offset4(2);
+		else
+			Sync_offset4(2);		
+    }
+}
+
+
 void _Plc_RecvProc(uchar offset)
 {
     //if(1/*Sync_Step=='E'*/)
     if (offset == 0) {
 		Sync_adjust();	
 		Sum_DM21_Sync(SYM_offset);
-       }else {
+     }else if (offset == 1){
 		Sync_adjust2();	
 		Sum_DM21_Sync2(SYM_offset2);
+	 }else if (offset == 2){
+		 Sync_adjust3(); 
+		 Sum_DM21_Sync3(SYM_offset3);
+	 }else if (offset == 2){
+		 Sync_adjust4(); 
+		 Sum_DM21_Sync4(SYM_offset4);
 	 }
 	sync_word_l<<=1;	
 	if(plc_byte_data&0x80)
@@ -2431,13 +2458,11 @@ void _Plc_RecvProc(uchar offset)
     //RSSIV_buf[Sync_bit1_cnt]=RSSIV;
     if(r_sync_bit==1)    //如果收到桢同步信号09
 	{
-     bitcnt ++;
 	    rcv_normal_data();    //
 	 	return;
 	}
    Sync_bit1_cnt++;
-   if (Sync_bit1_cnt >= 16)
-   NOP();
+
 	if(((plc_byte_data&0x01)==0)&&(sync_word_l!=0xff))
 	{
 		plc_restart();
@@ -2474,11 +2499,15 @@ void Plc_RecvProc()
 	//	  t1.NumChar[1] = T16G1H; 
 //test = 0xaa;
 	_Plc_RecvProc(0);
-	if (Sync_Step == 'E')
-		_Plc_RecvProc(24);
-   else
-    NOP();
-	
+	if (Sync_Step == 'E') {
+		_Plc_RecvProc(1);
+	}
+	if (Sync_Step == 'E') {
+		_Plc_RecvProc(2);
+	}
+	if (Sync_Step == 'E') {
+		_Plc_RecvProc(3);
+	}	
 	//  t2.NumChar[0]=T16G1L;
 	//   t2.NumChar[1] = T16G1H; 
 	//  test = t2.NumInt - t1.NumInt;
@@ -2487,28 +2516,42 @@ void Plc_RecvProc()
 
 
 //相位同步法1,每次移1BIT,移7次，每次都要按15个字节按字节移15次；共计算8*15=120次
-void _Sync1_Proc()
+void _Sync1_Proc(uchar offset)
 {
     uchar ucA,ucB,ucC;
 
     Sum_Max=0;
     Sum_FXMax=0;  //0720
-    
-    SYM_offset=0;
-    SYCl_offset=0;
-
+    if (offset == 0) {
+        SYM_offset=0;
+    	SYCl_offset=0;
+    }else {
+		SYM_offset2=0;
+		SYCl_offset2=0;
+    }
     //BitData_T[23+offset]=BitData_T[0+offset];
     for(ucB=0;ucB<8;ucB++) 				//约13335T
     {
         for(ucA=0;ucA<3;ucA++)
     	{
-            Sum_DM21_Sync(ucA);
-	       	if(ZXDM>Sum_Max)
+    		if (offset == 0) {
+            	Sum_DM21_Sync(ucA);
+	       		if(ZXDM>Sum_Max)
 	        	{
-	  	       	Sum_Max=ZXDM;
+	  	       		Sum_Max=ZXDM;
 	  	        	SYM_offset=ucA;
 	  	        	SYCl_offset=ucB;
-	        	}					
+	        	}
+			}else{
+            	Sum_DM21_Sync2(ucA);
+	       		if(ZXDM>Sum_Max)
+	        	{
+	  	       		Sum_Max=ZXDM;
+	  	        	SYM_offset2=ucA;
+	  	        	SYCl_offset2=ucB;
+	        	}
+
+			}
     		
             //    else 6 nop 
 	        if(FXDM>Sum_FXMax)
@@ -2516,33 +2559,18 @@ void _Sync1_Proc()
 	  	        Sum_FXMax=FXDM;	  		  	
 	        }
     	}
-#if 0
-        for(ucC=0;ucC<23+0;ucC++)
-        {
-            BitData_T[ucC]<<=1;
-            if(BitData_T[ucC+1]&0x80) 
-            {    	
-                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
-	            Bit1Num_T[ucC]++;
-                Bit1Num_T[ucC+1]--;
-            }
-			
-            //  else
-            //  {  //16 NOP();
-          
-            //  } 
-        }
-#else
-	{
-		do_left_shift_1bit(0);
-		do_left_shift_1bit(1);
-		do_left_shift_1bit(2);
-		do_left_shift_1bit(3);
-		do_left_shift_1bit(4);
-		do_left_shift_1bit(5);
-		do_left_shift_1bit(6);
-		do_left_shift_1bit(7);
-		do_left_shift_1bit(8);
+
+		if (offset == 0)
+		{
+			do_left_shift_1bit(0);
+			do_left_shift_1bit(1);
+			do_left_shift_1bit(2);
+			do_left_shift_1bit(3);
+			do_left_shift_1bit(4);
+			do_left_shift_1bit(5);
+			do_left_shift_1bit(6);
+			do_left_shift_1bit(7);
+			do_left_shift_1bit(8);
         	do_left_shift_1bit(9);
         	do_left_shift_1bit(10);
         	do_left_shift_1bit(11);
@@ -2558,8 +2586,32 @@ void _Sync1_Proc()
         	do_left_shift_1bit(21);
         	do_left_shift_1bit(22);
         //OFF_do(23);
-    	}
-#endif		
+		}else{
+	    	do_left_shift_1bit(0+RECV_BITS);
+	    	do_left_shift_1bit(1+RECV_BITS);
+	    	do_left_shift_1bit(2+RECV_BITS);
+	    	do_left_shift_1bit(3+RECV_BITS);
+	    	do_left_shift_1bit(4+RECV_BITS);
+	    	do_left_shift_1bit(5+RECV_BITS);
+	    	do_left_shift_1bit(6+RECV_BITS);
+	    	do_left_shift_1bit(7+RECV_BITS);
+	    	do_left_shift_1bit(8+RECV_BITS);
+	    	do_left_shift_1bit(9+RECV_BITS);
+	    	do_left_shift_1bit(10+RECV_BITS);
+	    	do_left_shift_1bit(11+RECV_BITS);
+	    	do_left_shift_1bit(12+RECV_BITS);
+	    	do_left_shift_1bit(13+RECV_BITS);
+	    	do_left_shift_1bit(14+RECV_BITS);
+	    	do_left_shift_1bit(15+RECV_BITS);
+	    	do_left_shift_1bit(16+RECV_BITS);
+	    	do_left_shift_1bit(17+RECV_BITS);
+	    	do_left_shift_1bit(18+RECV_BITS);
+	    	do_left_shift_1bit(19+RECV_BITS);
+	    	do_left_shift_1bit(20+RECV_BITS);
+	    	do_left_shift_1bit(21+RECV_BITS);
+	    	do_left_shift_1bit(22+RECV_BITS);
+
+		}		
     }
  
     if(Sync_Step=='C')
@@ -2567,7 +2619,7 @@ void _Sync1_Proc()
 		if((Sum_Max>Sum_FXMax)&&(Sum_Max>Sync21_Set))
    	    {
    	        Plc_Mode='R';
-    	    Sync_Step='E';
+    	    Sync_Step='F';
             Sync_bit1_cnt=0;            
             plc_byte_data=0;
             Work_step=1;
@@ -2589,91 +2641,110 @@ void _Sync1_Proc()
         }
         else
   	    {
-		plc_restart_sync();
+			plc_restart_sync();
    	    }
     }
 }
 
-
-void _Sync2_Proc()
+void _Sync2_Proc(uchar offset)
 {
     uchar ucA,ucB,ucC;
 
     Sum_Max=0;
     Sum_FXMax=0;  //0720
-
-    	SYM_offset2=0;
-    	SYCl_offset2=0;
-	
+    if (offset == 0) {
+        SYM_offset3=0;
+    	SYCl_offset3=0;
+    }else {
+		SYM_offset4=0;
+		SYCl_offset4=0;
+    }
     //BitData_T[23+offset]=BitData_T[0+offset];
     for(ucB=0;ucB<8;ucB++) 				//约13335T
     {
         for(ucA=0;ucA<3;ucA++)
     	{
-    	
-			   Sum_DM21_Sync2(ucA);
-	       	if(ZXDM>Sum_Max)
+    		if (offset == 0) {
+            	Sum_DM21_Sync3(ucA);
+	       		if(ZXDM>Sum_Max)
 	        	{
-	  	       	Sum_Max=ZXDM;
-	  	        	SYM_offset2=ucA;
-	  	        	SYCl_offset2=ucB;
-	        	}			
-    		
+	  	       		Sum_Max=ZXDM;
+	  	        	SYM_offset3=ucA;
+	  	        	SYCl_offset3=ucB;
+	        	}
+			}else{
+            	Sum_DM21_Sync4(ucA);
+	       		if(ZXDM>Sum_Max)
+	        	{
+	  	       		Sum_Max=ZXDM;
+	  	        	SYM_offset4=ucA;
+	  	        	SYCl_offset4=ucB;
+	        	}
 
+			}
+    		
             //    else 6 nop 
 	        if(FXDM>Sum_FXMax)
 	        {
 	  	        Sum_FXMax=FXDM;	  		  	
 	        }
     	}
-#if 0
-        for(ucC=24;ucC<23+24;ucC++)
-        {
-            BitData_T[ucC]<<=1;
-            if(BitData_T[ucC+1]&0x80) 
-            {    	
-                BitData_T[ucC]++;		//下一字节的高位移到当前的最低位
-	            Bit1Num_T[ucC]++;
-                Bit1Num_T[ucC+1]--;
-            }
-			
-            //  else
-            //  {  //16 NOP();
-          
-            //  } 
-        }
-#else
-	{
-	    	do_left_shift_1bit(0+24);
-	    	do_left_shift_1bit(1+24);
-	    	do_left_shift_1bit(2+24);
-	    	do_left_shift_1bit(3+24);
-	    	do_left_shift_1bit(4+24);
-	    	do_left_shift_1bit(5+24);
-	    	do_left_shift_1bit(6+24);
-	    	do_left_shift_1bit(7+24);
-	    	do_left_shift_1bit(8+24);
-	    	do_left_shift_1bit(9+24);
-	    	do_left_shift_1bit(10+24);
-	    	do_left_shift_1bit(11+24);
-	    	do_left_shift_1bit(12+24);
-	    	do_left_shift_1bit(13+24);
-	    	do_left_shift_1bit(14+24);
-	    	do_left_shift_1bit(15+24);
-	    	do_left_shift_1bit(16+24);
-	    	do_left_shift_1bit(17+24);
-	    	do_left_shift_1bit(18+24);
-	    	do_left_shift_1bit(19+24);
-	    	do_left_shift_1bit(20+24);
-	    	do_left_shift_1bit(21+24);
-	    	do_left_shift_1bit(22+24);
-	    	//OFF_do(23+24);
 
-    }
-#endif		
+		if (offset == 0)
+		{
+			do_left_shift_1bit_1(0);
+			do_left_shift_1bit_1(1);
+			do_left_shift_1bit_1(2);
+			do_left_shift_1bit_1(3);
+			do_left_shift_1bit_1(4);
+			do_left_shift_1bit_1(5);
+			do_left_shift_1bit_1(6);
+			do_left_shift_1bit_1(7);
+			do_left_shift_1bit_1(8);
+        	do_left_shift_1bit_1(9);
+        	do_left_shift_1bit_1(10);
+        	do_left_shift_1bit_1(11);
+        	do_left_shift_1bit_1(12);
+        	do_left_shift_1bit_1(13);
+        	do_left_shift_1bit_1(14);
+        	do_left_shift_1bit_1(15);
+        	do_left_shift_1bit_1(16);
+        	do_left_shift_1bit_1(17);
+        	do_left_shift_1bit_1(18);
+        	do_left_shift_1bit_1(19);
+        	do_left_shift_1bit_1(20);
+        	do_left_shift_1bit_1(21);
+        	do_left_shift_1bit_1(22);
+        //OFF_do(23);
+		}else{
+	    	do_left_shift_1bit_1(0+RECV_BITS);
+	    	do_left_shift_1bit_1(1+RECV_BITS);
+	    	do_left_shift_1bit_1(2+RECV_BITS);
+	    	do_left_shift_1bit_1(3+RECV_BITS);
+	    	do_left_shift_1bit_1(4+RECV_BITS);
+	    	do_left_shift_1bit_1(5+RECV_BITS);
+	    	do_left_shift_1bit_1(6+RECV_BITS);
+	    	do_left_shift_1bit_1(7+RECV_BITS);
+	    	do_left_shift_1bit_1(8+RECV_BITS);
+	    	do_left_shift_1bit_1(9+RECV_BITS);
+	    	do_left_shift_1bit_1(10+RECV_BITS);
+	    	do_left_shift_1bit_1(11+RECV_BITS);
+	    	do_left_shift_1bit_1(12+RECV_BITS);
+	    	do_left_shift_1bit_1(13+RECV_BITS);
+	    	do_left_shift_1bit_1(14+RECV_BITS);
+	    	do_left_shift_1bit_1(15+RECV_BITS);
+	    	do_left_shift_1bit_1(16+RECV_BITS);
+	    	do_left_shift_1bit_1(17+RECV_BITS);
+	    	do_left_shift_1bit_1(18+RECV_BITS);
+	    	do_left_shift_1bit_1(19+RECV_BITS);
+	    	do_left_shift_1bit_1(20+RECV_BITS);
+	    	do_left_shift_1bit_1(21+RECV_BITS);
+	    	do_left_shift_1bit_1(22+RECV_BITS);
+
+		}		
     }
  
-    if(Sync_Step=='C')
+    if(Sync_Step=='D')
     {
 		if((Sum_Max>Sum_FXMax)&&(Sum_Max>Sync21_Set))
    	    {
@@ -2683,7 +2754,7 @@ void _Sync2_Proc()
             plc_byte_data=0;
             Work_step=1;
             Plc_data_bit_cnt = 8;
-            R_LED=0;
+            //R_LED=1;
     	}
  	    else
   	    {
@@ -2695,27 +2766,35 @@ void _Sync2_Proc()
         if((Sum_Max>Sum_FXMax)&&(Sum_Max>Sync21_Set))
         {
             Plc_SyncBZ=1;
-      	    Sync_Step='C';
+      	    Sync_Step='D';
       	    T16G1IE=0;    	
         }
         else
   	    {
-		plc_restart_sync();
+			plc_restart_sync();
    	    }
     }
 }
 
+
 //union SVR_INT_B08 t1, t2;
 //int test;
+/* sync_step C->F->D->E */
 void Plc_SyncProc(void)
 {
    //T16G2IE = 0;
   //	t1.NumChar[0]=T16G1L;
   //	t1.NumChar[1] = T16G1H; 
-	_Sync1_Proc();
+	_Sync1_Proc(0);
 	if (Sync_Step == 'C')
-		_Sync2_Proc();
+		_Sync1_Proc(1);
 	
+	if (Sync_Step == 'F')
+		_Sync2_Proc(0);
+
+	if (Sync_Step == 'D')
+		_Sync2_Proc(1);
+
   	//t2.NumChar[0]=T16G1L;
    //	t2.NumChar[1] = T16G1H;	
 	//test = t2.NumInt - t1.NumInt;
@@ -2726,7 +2805,7 @@ void Plc_SyncProc(void)
 
 BOOL plc_tx_idle()
 {
-    if (Plc_Mode=='T')//NOT IN TX
+    if (Plc_Mod != 0)//NOT IN TX and RX
         return FALSE;
     else
 	 return TRUE;    
