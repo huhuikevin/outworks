@@ -64,7 +64,7 @@ sbit   Plc_Tx_Bit,Plc_Tx_first_Bit,Plc_Tx_Second_Bit;
 uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,Plc_data_len,Plc_Mode,Plc_ZeroMode;
 uchar  Plc_Samples_bit1_cnt, Plc_Samples_byte;
 
-section3 uchar Plc_recv[MaxPlcL]@0x180;
+section3 uchar plc_data[MaxPlcL]@0x180;
 section3 uchar RSSIV,RSSIT; 
 section3 uchar SYM_off[8],SYCl_off[8];
 
@@ -959,7 +959,7 @@ void tx_normal_data(void)   /*发送正常数据*/
 		Plc_data_bit_cnt=8;        /*应发送8位,先减一后发送,所以为9;*/
 		if(t_nor_bit==1)
 		{
-            plc_byte_data=Plc_recv[Plc_data_byte_cnt]; /*取要发送的数据,有0x09af*/
+            plc_byte_data=plc_data[Plc_data_byte_cnt]; /*取要发送的数据,有0x09af*/
 		        
 			if(Plc_data_byte_cnt==Plc_data_len)   /*全部发送完*/
 			{
@@ -976,7 +976,7 @@ void tx_normal_data(void)   /*发送正常数据*/
 		    {
                 t_nor_bit=1;
 		        Plc_data_byte_cnt=0;
-		        plc_byte_data=Plc_recv[Plc_data_byte_cnt];
+		        plc_byte_data=plc_data[Plc_data_byte_cnt];
 		    }
 		}		
 	}
@@ -1009,12 +1009,12 @@ void rcv_normal_data(void)   /*正常接收*/
 		return;
 	
 	Plc_data_bit_cnt=8;
-	Plc_recv[Plc_data_byte_cnt]=plc_byte_data;              /*存储一个字节*/
+	plc_data[Plc_data_byte_cnt]=plc_byte_data;              /*存储一个字节*/
 	Plc_data_byte_cnt++;
 
 	if(Plc_data_byte_cnt==1) 
-	{// Plc_data_len=Plc_recv[6]+8;
-        if(Plc_recv[0]>=MaxPlcL) 
+	{// Plc_data_len=plc_data[6]+8;
+        if(plc_data[0]>=MaxPlcL) 
 	  	{
 		plc_restart();
             return;
@@ -1024,7 +1024,7 @@ void rcv_normal_data(void)   /*正常接收*/
 	{ 
       if((Plc_data_byte_cnt+1)==9)
         NOP();
-		if((Plc_data_byte_cnt+1)>=Plc_recv[0])// Plc_recv[1])       /*如果全部接收完*/
+		if((Plc_data_byte_cnt+1)>=plc_data[0])// plc_data[1])       /*如果全部接收完*/
 		{
             Rx_status='R';
 			r_sync_bit=0;
@@ -2653,9 +2653,9 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
     if (FALSE == plc_tx_idle())
         return 0;
 
-	Plc_recv[0]=0xaa;	
-    Plc_recv[1]=num+2;	
-	MMemcpy(&Plc_recv[2],pdata,num);
+	plc_data[0]=0xaa;	
+    plc_data[1]=num+2;	
+	MMemcpy(&plc_data[2],pdata,num);
 	
 	Ini_Plc_Tx();
     S_LED=1;
@@ -2689,7 +2689,7 @@ int8u plc_rx_bytes(uchar *pdata)
     if(Rx_status=='R')
     {
     	int8u len = Plc_data_byte_cnt-1;
-        MMemcpy(pdata, &Plc_recv[1], len);
+        MMemcpy(pdata, &plc_data[1], len);
 
         Plc_Mode=0;
         IniT16G1(CCPMODE);
