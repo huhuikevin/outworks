@@ -2,6 +2,9 @@
 #ifndef __CONFIG__H_
 #define __CONFIG__H_
 
+//#define CONFIG_200BPS_PLC 1
+#define CONFIG_400BPS_PLC 1
+
 #define CONFIG_UART 1
 
 #ifdef CONFIG_UART
@@ -13,6 +16,14 @@
 #define CONFIG_CONSOLE_UART 1 // 系统console print用哪个uart口
 #endif
 #endif
+
+#ifdef SPI_GPIO
+#define CONFIG_SPI_CSN  PC1
+#define CONFIG_SPI_SCK  PC2
+#define CONFIG_SPI_MOSI PC3
+#define CONFIG_SPI_MISO PC4
+#endif
+
 
 //#define CONFIG_W2_4G 1
 #endif/* __CONFIG__H_ */

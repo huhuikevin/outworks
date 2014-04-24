@@ -7,7 +7,9 @@
 #include "soc_25xx.h"
 #include "tool.h"
 #include "debug.h"
+#include "config.h"
 
+#ifdef CONFIG_200BPS_PLC
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
 #define  RH_Time  0X05
@@ -2760,97 +2762,4 @@ void plc_driver_process(void)
     }    
 }
 
-/************************************/
-/************************************/
-#if 0
-void main(void)
-{ 
-    int8u i;
-
-    // INI7p90();
-    RAM_Clr();
-    //Ini2571();
-    IO_Init();
-    //RAM_Clr();
-    PLC_RX;
-    R_LED=1;
-    Delay(200);
-    R_LED=0;
-    watchdog();
-    Delay(200);
-
-    R_LED=1;
-    Delay(200);
-    watchdog();
-    R_LED=0;
-    //  Recv_Plc_PN(); 
-    T16G1R_S.NumLong=50000;
-    Ini_Plc_Rec();
-    PLC_RX;
-    watchdog();
-  
-    PLC_RW=0x01;
-    PLC_ADDR=0x51;
-    testbyte=PLC_DATA;
-    PLC_RW=0x00;
- 
-    r_sync_bit=0;
-    // Plc_SyncBZ=0;
-    // SyncFind();
-    watchdog();
-    T16G2CH=0x0b;
-    T16G2CL=0x10;		//4:1 
-    IniT16G1(CCPMODE);
-    T16G1IF=0;
-    T16G1IE=1;
-    //  PLC_MOD=0x59;		//关接收
-    // INTG=0x84;
-    do
-    {
-        enable_irq(); 
-        watchdog();
-
-        if(Rec_Zero_bz)
-        {	
-            if(Plc_Mode=='R')
-    	    {       
-                if(Sync_Step=='E')
-    	            Plc_RecvProc();
-    	  
-    	    }
-    	    else
-    	    {
-    	        if(Plc_Mode=='F')
-    		    {
-    		        Plc_SyncProc();    		  
-    		    }
-    	    }
-    	    Rec_Zero_bz=0;
-        }
-        if(Rx_status=='R')
-        {
-            //Led_Con();
-            Plc_Mode=0;
-            IniT16G1(CCPMODE);
-            //全部接受ok，处理
-	        r_sync_bit=0;
-            Rx_status=0;
-            Plc_SyncBZ=0;
-	        Sync_Step=0;
-	        T16G2IE=0;
-  	  
-  	        Work_step=0;
-  	        R_LED=0;
-	        T16G1IF=0;
-  	        T16G1IE=1;
-            S_LED=0;
-        }
-        if(t_end_bit)
-	    {
-	    	t_end_bit=0;
-	  	    Ini_Plc_Rec();	  	
-	    }
-	  
-     }while(1);
-}
-#endif
+#endif /* ifdef CONFIG_200BPS_PLC*/
