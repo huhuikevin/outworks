@@ -7,7 +7,8 @@
 #include "soc_25xx.h"
 #include "tool.h"
 #include "debug.h"
-
+#include "config.h"
+#ifdef CONFIG_400BPS_PLC
 #define  CCPMODE  0x02
 #define  COMPMODE 0x01
 #define  RH_Time  0X05
@@ -65,7 +66,7 @@ uchar  Sync_Step;
 
 uchar  plc_byte_data,sync_word_l;
 sbit   r_sync_bit,t_nor_bit,t_end_bit,Plc_SyncBZ,Psk_FxBz,Rec_Zero_bz;
-sbit   Plc_Tx_Bit,Plc_Tx_first_Bit,Plc_Tx_Second_Bit;
+sbit   Plc_Tx_Bit,Plc_Tx_first_Bit,Plc_Tx_Second_Bit, Plc_Tx_Third_Bit, Plc_Tx_Forth_Bit;
 uchar  Plc_data_bit_cnt,Plc_data_byte_cnt,Plc_data_len,Plc_Mode,Plc_ZeroMode;
 uchar  Plc_Samples_bit1_cnt, Plc_Samples_byte;
 
@@ -426,10 +427,7 @@ void Delay(uint MS)
     }
 }
 
-//#define  delay6t()    NOP();NOP();NOP();NOP();NOP();NOP()
-//#define  delay8t()    NOP();NOP();NOP();NOP();NOP();NOP();NOP();NOP()
-//#define  delay4t()    NOP();NOP();NOP();NOP();
-//#define  delay7t()   NOP();NOP();NOP();NOP();NOP();NOP();NOP();
+#define  delay4t()    NOP();NOP();NOP();NOP()
 
 void delay6t()
 {
@@ -783,7 +781,7 @@ void  Sum_DM21_Sync4(uchar offset )
         ZXDM=ucS1+72-ucS0;
         break;
     case 1 :
-        ucS1=Bit1Num_1T[3+RECV_BITS];
+        ucS1=Bit1Num_T1[3+RECV_BITS];
         ucS1+=Bit1Num_T1[5+RECV_BITS];
         ucS1+=Bit1Num_T1[6+RECV_BITS];
         ucS1+=Bit1Num_T1[7+RECV_BITS];    
@@ -1009,45 +1007,44 @@ void TX0_PN23(void)
 //位间隔1998US
 void tx_normal_data(void)   /*发送正常数据*/
 {
-	
-	if(Plc_data_bit_cnt==0)   /*此字节发送完*/
-	{	
+    if(Plc_data_bit_cnt==0)   /*此字节发送完*/
+    {	
         Plc_data_byte_cnt++;
 	   	
-		Plc_data_bit_cnt=8;        /*应发送8位,先减一后发送,所以为9;*/
-		if(t_nor_bit==1)
-		{
+	 Plc_data_bit_cnt=8;        /*应发送8位,先减一后发送,所以为9;*/
+	 if(t_nor_bit==1)
+	 {
             plc_byte_data=plc_data[Plc_data_byte_cnt]; /*取要发送的数据,有0x09af*/
 		        
-			if(Plc_data_byte_cnt==Plc_data_len)   /*全部发送完*/
-			{
+	     if(Plc_data_byte_cnt==Plc_data_len)   /*全部发送完*/
+	     {
                 t_nor_bit=0;
-			   	t_end_bit=1;
-			   	S_LED=0;			//最后一位扩频位尚未发送
-			  	return;		
-			}
+		  t_end_bit=1;
+		  S_LED=0;			//最后一位扩频位尚未发送
+		   return;		
+	     }
+	  }
+	  else
+	  {
+             plc_byte_data=0xff;
+	      if(Plc_data_byte_cnt==2) 
+	      {
+                 t_nor_bit=1;
+		   Plc_data_byte_cnt=0;
+		   plc_byte_data=plc_data[Plc_data_byte_cnt];
 		}
-		else
-		{
-            plc_byte_data=0xff;
-		    if(Plc_data_byte_cnt==3) 
-		    {
-                t_nor_bit=1;
-		        Plc_data_byte_cnt=0;
-		        plc_byte_data=plc_data[Plc_data_byte_cnt];
-		    }
-		}		
-	}
-	else if (Plc_data_bit_cnt != 8)
-	{
+	   }		
+     }
+     else if (Plc_data_bit_cnt != 8)
+     {
         plc_byte_data<<=1;	
-	}
-	if(plc_byte_data&0x80) 
+     }
+     if(plc_byte_data&0x80) 
         Plc_Tx_Bit=1;		
-	else
+     else
         Plc_Tx_Bit=0;	 
 
-    Plc_data_bit_cnt--;	 /*还应发送几位*/
+     Plc_data_bit_cnt--;	 /*还应发送几位*/
    
  }
 	
@@ -1999,190 +1996,200 @@ void T16G1Int_Proc(void)
 
 void T16G2Int_Proc(void)
 {	
-	//if (Rec_Zero_bz) //for debug
-    //PB5 = 1;
     if(Plc_Mode=='T')
     {
-    //        Uart_rec1Point=0;
         if(Work_step==2)
         {
             PLC_MOD=0x23;
             PLC_TX;
             if(t_end_bit==0)  //
-		    {
-		    	trans_step_next();
-		        if(Plc_Tx_first_Bit)
-		            TX0_PN21();
-		        else
-		            TX1_PN21();
-		        
-				DelayBit();
-				DelayBit();
-				DelayBit();
-				//DelayBit();
-				//DelayBit();
-				
-		        if(Plc_Tx_Second_Bit)
-		            TX0_PN21();
-		        else
-		            TX1_PN21();
-		        
-			tx_normal_data();
-			Plc_Tx_first_Bit = Plc_Tx_Bit;
-			if(t_end_bit==0){
-         			tx_normal_data();
-			        Plc_Tx_Second_Bit= Plc_Tx_Bit;
-         }
-	
-				
-		        PLC_MOD=0x00;
-		        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-                //T16G2RL=T16G1R_S.NumChar[0];
-		    }
-            if(t_end_bit)
             {
-                Plc_Mode=0;
+	         trans_step_next();
+		  if(Plc_Tx_first_Bit)
+		      TX0_PN23();
+		  else
+		      TX1_PN23();
+		        
+		   DelayBit();
+				
+		   if(Plc_Tx_Second_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+
+		   DelayBit();
+				
+		   if(Plc_Tx_Third_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+		   
+		   DelayBit();
+				
+		   if(Plc_Tx_Forth_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+		   
+		   tx_normal_data();
+		   Plc_Tx_first_Bit = Plc_Tx_Bit;
+         	   tx_normal_data();
+		   Plc_Tx_Second_Bit= Plc_Tx_Bit;
+		   tx_normal_data();
+		   Plc_Tx_Third_Bit = Plc_Tx_Bit;
+         	   tx_normal_data();
+		   Plc_Tx_Forth_Bit= Plc_Tx_Bit;
+
+		   PLC_MOD=0x00;
+	        }
+               if(t_end_bit)
+               {
+                    Plc_Mode=0;
            	
-           	    t_nor_bit=0;
-           	    Plc_data_len=0;
-           	    R_LED=1;
-                //     	 T16G1IF=0;			//0802
-                T16G1IE=1;
+           	      t_nor_bit=0;
+           	      Plc_data_len=0;
+           	      R_LED=1;
+                
+                    T16G1IE=1;
                  
-		        T16G2IE=0;
-	            PLC_MOD=0X59;
-            }
-            PLC_RX;
- 	
- 	        //    PLC_MOD=0;
-     
+		      T16G2IE=0;
+	             PLC_MOD=0X59;
+               }
+               PLC_RX;     
 	    }
 	    else // if(Work_step==1)		//
 	    {
-	        //Ini_Plc_Tx();
-	        Work_step=2;
-            PLC_MOD=0x23;
-            //  PLC_RW=0x00;
-            PLC_TX;
-        
-	        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-            //T16G2RL=T16G1R_S.NumChar[0];
-			trans_step_next();
-		        if(Plc_Tx_first_Bit)
-		            TX0_PN21();
-		        else
-		            TX1_PN21();			
-			//delay14t();
-            //PLC_RX;
-			DelayBit();
-			DelayBit();
-			DelayBit();
-			//DelayBit();
-			//DelayBit();
-		        if(Plc_Tx_Second_Bit)
-		            TX0_PN21();
-		        else
-		            TX1_PN21();
+	         Work_step=2;
+                PLC_MOD=0x23;
+                PLC_TX;
 
-			tx_normal_data();
-			Plc_Tx_first_Bit = Plc_Tx_Bit;
+	         trans_step_next();
+			 
+		  if(Plc_Tx_first_Bit)
+		      TX0_PN23();
+		  else
+		      TX1_PN23();
+		        
+		   DelayBit();
+				
+		   if(Plc_Tx_Second_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+
+		   DelayBit();
+				
+		   if(Plc_Tx_Third_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+		   
+		   DelayBit();
+				
+		   if(Plc_Tx_Forth_Bit)
+		       TX0_PN23();
+		   else
+		       TX1_PN23();
+		   
+		   tx_normal_data();
+		   Plc_Tx_first_Bit = Plc_Tx_Bit;
+         	   tx_normal_data();
+		   Plc_Tx_Second_Bit= Plc_Tx_Bit;
+		   tx_normal_data();
+		   Plc_Tx_Third_Bit = Plc_Tx_Bit;
+         	   tx_normal_data();
+		   Plc_Tx_Forth_Bit= Plc_Tx_Bit;		
+
+		   delay6t();
+                 PLC_RX;
 			
-			tx_normal_data();
-			Plc_Tx_Second_Bit= Plc_Tx_Bit;			
+ 	          PLC_MOD=0;
+ 	          T16G1IE=0;
 
-			delay14t();
-
-		
-            PLC_RX;
-			
- 	        //    	Ini_Plc_Rec();
- 	        PLC_MOD=0;
- 	        T16G1IE=0;
-	        //  T16G1IF=0;		//0802
-            //   T16G1CL=0x21;		//
         }
     }
     else  if(Plc_Mode=='R')
     {
         Rec_Zero_bz=1; 
-		trans_step_next();
-		//DelayBit();
+	 trans_step_next();
+	
         if(Work_step==2)
         {
             PLC_MOD=0x59;
          
-   	        Recv_25Pn();
+   	     Recv_23Pn();
             DelayBit();
-			DelayBit();
-		 	Recv_sec_25Pn();   	
-   	        PLC_MOD=0x00;		//0720
+			
+	     Recv_1_23Pn();   
+	     DelayBit();
+
+	     Recv_2_23Pn();
+	     DelayBit();
+
+	     Recv_3_23Pn();
+   	     PLC_MOD=0x00;		//0720
         }
-   	    else // if(Work_step==1)		//
-	    {
-	        //Ini_Plc_Tx();
+   	 else // if(Work_step==1)		//
+	 {
             PLC_MOD=0x59;
             //   PLC_RX;
-            Recv_25Pn();
-			DelayBit();
+   	     Recv_23Pn();
             DelayBit();
-		    Recv_sec_25Pn(); 			
+			
+	     Recv_1_23Pn();   
+	     DelayBit();
+
+	     Recv_2_23Pn();
+	     DelayBit();
+
+	     Recv_3_23Pn();
             PLC_MOD=0x00;       //0720
             Work_step=2;
 	   
-            //   PLC_MOD=0x00;
- 	        //    	Ini_Plc_Rec();
-            //	  PLC_MOD=0x59;
-            //   T16G1CL=0x21;		//
         }
-        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-        //T16G2RL=T16G1R_S.NumChar[0];
     }
     else  if(Plc_Mode==0)
     {     
         PLC_MOD=0x59;
-		trans_step_next();
-        //   PLC_RX;
-        Recv_25Pn();
-		DelayBit();
-		DelayBit();
-		//DelayBit();
-		//DelayBit();
-		//DelayBit();
-//		DelayBit();
-		Recv_sec_25Pn(); 
-        //T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-        //T16G2RL=T16G1R_S.NumChar[0];
+	 trans_step_next();
+  
+   	 Recv_23Pn();
+        DelayBit();
+			
+	 Recv_1_23Pn();   
+	 DelayBit();
+
+	 Recv_2_23Pn();
+	 DelayBit();
+
+	 Recv_3_23Pn();
          
         PLC_MOD=0x00;    //0720
         Plc_Mode='F';  
         Rec_Zero_bz=1;
-		T16G1IE=0;
-		Sync_Step = 0;
-		//	T16G1IF=0;	//0802
-        //  Work_step=2;
-        //    Rec_Zero_bz=1;
+	 Sync_Step = 0;
+	 T16G1IE=0;
+	 
     }
     else  if(Plc_Mode=='F')
     {
         PLC_MOD=0x59;
-        //   PLC_RX;
-       
-	    //  T16G2RH=T16G1R_S.NumChar[1];  //赋下次过零接收时间
-        //  T16G2RL=T16G1R_S.NumChar[0];
-        trans_step_next();
-        Recv_25Pn(); 
-		DelayBit();
-		DelayBit();
-		//DelayBit();
-		//DelayBit();
-		//DelayBit();
-//		DelayBit();
-		Recv_sec_25Pn(); 		
-        PLC_MOD=0x00;		//0720
-        Plc_Mode='F';     
-        Rec_Zero_bz=1;   
-        //  Work_step=2;
-        //    Rec_Zero_bz=1;
+	 trans_step_next();
+  
+   	 Recv_23Pn();
+        DelayBit();
+			
+	 Recv_1_23Pn();   
+	 DelayBit();
+
+	 Recv_2_23Pn();
+	 DelayBit();
+
+	 Recv_3_23Pn();
+         
+        PLC_MOD=0x00;    //0720
+        Plc_Mode='F';  
+        Rec_Zero_bz=1;
     }
     
     if(T16G1IF)
@@ -2193,9 +2200,8 @@ void T16G2Int_Proc(void)
    	
    	    //Zero_cnt++; 
 	    Zero_Time_adjust();
-		T16G1IF=0;   	
+	    T16G1IF=0;   	
    	}
-	//PB5  = 0;
 }
 
 
@@ -2476,7 +2482,6 @@ void _Plc_RecvProc(uchar offset)
 		r_sync_bit=1;   //收到桢同步标志置1
 									//	r_func1_bit=0;	//准备收第一个字节FUNC
 		Plc_data_byte_cnt=0;
-        bitcnt = 0;
 		//R_LED=1;
 	}
 	else {
@@ -2805,7 +2810,7 @@ void Plc_SyncProc(void)
 
 BOOL plc_tx_idle()
 {
-    if (Plc_Mod != 0)//NOT IN TX and RX
+    if (Plc_Mode != 0)//NOT IN TX and RX
         return FALSE;
     else
 	 return TRUE;    
@@ -2836,6 +2841,8 @@ int8u plc_tx_bytes(uchar *pdata ,uchar num)
 	plc_byte_data=0xff;
 	Plc_Tx_first_Bit = 1;//first sync bit
 	Plc_Tx_Second_Bit = 1; // second sync bit
+	Plc_Tx_Third_Bit = 1;
+	Plc_Tx_Forth_Bit = 1;
 	//SSC15=Pn15_Con1;
 	IniT16G1(CCPMODE);
 	T16G2IE=0;
@@ -2924,97 +2931,4 @@ void plc_driver_process(void)
     }    
 }
 
-/************************************/
-/************************************/
-#if 0
-void main(void)
-{ 
-    int8u i;
-
-    // INI7p90();
-    RAM_Clr();
-    //Ini2571();
-    IO_Init();
-    //RAM_Clr();
-    PLC_RX;
-    R_LED=1;
-    Delay(200);
-    R_LED=0;
-    watchdog();
-    Delay(200);
-
-    R_LED=1;
-    Delay(200);
-    watchdog();
-    R_LED=0;
-    //  Recv_Plc_PN(); 
-    T16G1R_S.NumLong=50000;
-    Ini_Plc_Rec();
-    PLC_RX;
-    watchdog();
-  
-    PLC_RW=0x01;
-    PLC_ADDR=0x51;
-    testbyte=PLC_DATA;
-    PLC_RW=0x00;
- 
-    r_sync_bit=0;
-    // Plc_SyncBZ=0;
-    // SyncFind();
-    watchdog();
-    T16G2CH=0x0b;
-    T16G2CL=0x10;		//4:1 
-    IniT16G1(CCPMODE);
-    T16G1IF=0;
-    T16G1IE=1;
-    //  PLC_MOD=0x59;		//关接收
-    // INTG=0x84;
-    do
-    {
-        enable_irq(); 
-        watchdog();
-
-        if(Rec_Zero_bz)
-        {	
-            if(Plc_Mode=='R')
-    	    {       
-                if(Sync_Step=='E')
-    	            Plc_RecvProc();
-    	  
-    	    }
-    	    else
-    	    {
-    	        if(Plc_Mode=='F')
-    		    {
-    		        Plc_SyncProc();    		  
-    		    }
-    	    }
-    	    Rec_Zero_bz=0;
-        }
-        if(Rx_status=='R')
-        {
-            //Led_Con();
-            Plc_Mode=0;
-            IniT16G1(CCPMODE);
-            //全部接受ok，处理
-	        r_sync_bit=0;
-            Rx_status=0;
-            Plc_SyncBZ=0;
-	        Sync_Step=0;
-	        T16G2IE=0;
-  	  
-  	        Work_step=0;
-  	        R_LED=0;
-	        T16G1IF=0;
-  	        T16G1IE=1;
-            S_LED=0;
-        }
-        if(t_end_bit)
-	    {
-	    	t_end_bit=0;
-	  	    Ini_Plc_Rec();	  	
-	    }
-	  
-     }while(1);
-}
-#endif
+#endif /*ifdef CONFIG_400BPS_PLC*/
