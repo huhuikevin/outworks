@@ -7,7 +7,7 @@
 
 typedef enum {
     MacPlc = 0,
-    MacWireless_2_4G,
+    MacHw2000,
     MacTypeEnd
 }uMacType;
 

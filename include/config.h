@@ -25,7 +25,7 @@
 #endif
 
 
-//#define CONFIG_W2_4G 1
+//#define CONFIG_HW2000 1
 #endif/* __CONFIG__H_ */
 
 

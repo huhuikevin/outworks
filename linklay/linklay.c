@@ -20,18 +20,6 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #define PKG_TYPE_NORMAL 0
 #define PKG_TYPE_CTRL    1
 
-#define LINKLAY_BYTE4(ver, t, len) (ver<<6 | t << 5 | len)
-#define LINKLAY_BYTE5(seq, f) (seq<<4 | f&0x3)
-
-#define LINKLAY_BYTE5_ACK(seq, f) (seq<<4 | 1<<3 | f&0x3)
-
-#define get_ver(byte4) ((bytes>>6) & 0x3)
-#define get_type(byte4) ((byte4>>5) & 0x1)
-#define get_len(byte4) (byte4 & 0x1f)
-#define get_anck(byte4) (byte4>>3 & 0x1)
-
-#define get_seq(byte5) ((byte5>>4) & 0xf)
-
 typedef enum {
     LinkSendIdle = 0,
     LinkSendTxing,
@@ -118,7 +106,7 @@ void linklay_init()
 	MMemSet(&linklay[0], 0, sizeof(sLinklayCtrl));
 	linklay[0].mac_type = MacPlc;
 	MMemSet(&linklay[1], 0, sizeof(sLinklayCtrl));
-	linklay[1].mac_type = MacWireless_2_4G;
+	linklay[1].mac_type = MacHw2000;
 }
 
 int8u linklay_send_data(int8u *pdata, int8u len, int8u mac)
@@ -273,9 +261,9 @@ int8u mac_rx_bytes(int8u mac_type, Plinklay_Frame pFrame)
 {
     if (mac_type == MacPlc)
         return plc_rx_bytes((uchar *)pFrame);
-#ifdef CONFIG_W2_4G
-    else if (mac_type == MacWireless_2_4G)
-        return wireless_2_4G_rx_byte((uchar *)pFrame);
+#ifdef CONFIG_HW2000
+    else if (mac_type == MacHw2000)
+        return hw2000_rx_bytes((uchar *)pFrame);
 #endif
     return 0;
 }
@@ -286,9 +274,9 @@ int8u mac_tx_bytes(int8u mac_type, uchar *pdata, int8u num)
     
     if (mac_type == MacPlc)
         realsend = plc_tx_bytes(pdata, num);
-#ifdef CONFIG_W2_4G         
-    else if (mac_type == MacWireless_2_4G)
-        realsend = wireless_2_4G_tx_bytes(pdata, num);
+#ifdef CONFIG_HW2000         
+    else if (mac_type == MacHw2000)
+        realsend = hw2000_tx_bytes(pdata, num);
 #endif    
     return realsend;    
 }
