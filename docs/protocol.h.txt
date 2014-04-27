@@ -1,0 +1,63 @@
+// not the real head file
+
+struct linklayhead
+{
+	uchar ver:2;
+	uchar len:5;
+	uchar ack_pkg:1;// 0:normal packaget, 1: ack package
+	
+	uchar route:1;//route package
+	uchar seq:1; // 
+	uchar resend:2;// resend times
+	uchar sender:1;//0:send by device, 1:send by gateway
+	uchar res:3;
+
+	uchar Dst[4];// destnation addr,may be the next hop of the route
+	uchar Src[4];// source addr, router's mac
+	uchar FinalDst[4];//final addr, means the package is real sent to
+
+	uchar crc8;
+}
+
+struct routeitem{
+	uchar dst[4];
+	uchar next[4];
+	uchar rssiv;
+	uchar hop;      //how many devices passed if we reached the dst
+	uchar phy_type; //0: plc can reached to the dst, 1: 2.4G can reached the dst
+}
+
+struct routehead{
+	uchar ver:2;
+	uchar device_type:1;//0:device ,1:gateway
+	uchar phy_type:1;// 0: plc, 1:2.4G
+	uchar pkg_type:2; // 0: gateway found package, 1: gateway ack the found  package, 2:the beatheart between the next hop and the device
+	
+	uchar hop;//GFP:once through a device or gateway , hop++, and the linklayhead.Src = the deivce or gateway macaddr
+	           //GFAP:once through a device ,hop--, if hop==0 and not arrived at the dst, drop it
+	uchar Rssiv;
+
+	uchar max_hop;//the gateway sender the the max_hop, if hop >= max_hop ,this pkg will be droped
+	uchar macaddr[4];
+}
+// mac addr 0xff 0xff 0xff 0xff  --> broadcast
+// mac addr 0x00 0x00 0x00 0x00 ---> to gateway used by route protocol
+// the core function is finding the best routing by compare the RSSI val
+1.device/gateway: gateway found package:linklayhead.Dst=0x00000000, linklayhead.Src=macaddr,linklayhead.route=1
+recved the gateway found package, if the recved mac is not recoded it will recode the  mac addr, then give an ack with rssi to device
+
+gateway found pkg:
+a) gateway sent ----> device recved
+b) device sent ----> gateway recved
+c) device sent ------>devie recved
+d) gateway sent ----> gateway recved
+
+2. gateway sent device found package
+
+3. gateway sent route exchange package to gateway
+
+
+
+
+
+

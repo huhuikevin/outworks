@@ -1,0 +1,36 @@
+1. device 上电后，发送linklayhead.dst=0x00000000, linklayhead.src=本设备mac的route协议包（简称GFP，网关路由发现包），寻找通信效果最好的网关
+a）device收到后，判断如果是GFP，hop++
+   a.1)如果本地路由中没有routehead中的macaddr，本地路由记录下src mac地址，rssiv，hop，和routehead中的macaddr（这个地址是需要寻找gateway的设备mac）
+       a.1.1)如果本地路由中有gateway的mac，把GRFP中的dst换成gateway的mac，，src换成本设备mac，然后把GRFP中的，再发送出去（发送给网关）
+       a.1.2)如果本地路由中没有gateway的mac，src换成本设备mac，发送出去（还是dst=0x00000000）
+       a.1.3)以上两种情况中如果hop>=max_hop，丢掉这个GFP，
+   a.2)如果本地路由中已经存在了routehead中的macaddr
+       a.2.1)如果路由表中的hop大于接收到的hop，用新收到的GFP，中的信息更新路由表，回到a.1.1-a.1.3的处理
+       a.2.2)如果路由表中的hop小于接收到的hop，丢弃这个GFP包
+       a.2.3)如果两个hop一样大，比较rssiv的值，
+             a.2.3.1)如果路由表中的rssiv大，丢弃这个GFP包
+             a.2.3.1)如果路由表中的rssiv小，用新收到的GFP，中的信息更新路由表，回到a.1.1-a.1.3的处理
+
+b) gateway收到后，断如果是GFP
+   b.1)如果本地路由中没有routehead中的macaddr，本地路由记录下src mac地址，rssiv，hop，和routehead中的macaddr（这个地址是需要寻找gateway的设备mac）
+   b.2)如果本地路由中已经存在了routehead中的macaddr
+       b.2.1)如果路由表中的hop大于接收到的hop，用新收到的GFP，中的信息更新路由表
+       b.2.2)如果路由表中的hop小于接收到的hop，丢弃这个GFP包
+       b.2.3)如果两个hop一样大，比较rssiv的值，
+             b.2.3.1)如果路由表中的rssiv大，丢弃这个GFP包
+             b.2.3.1)如果路由表中的rssiv小，用新收到的GFP，中的信息更新路由表
+   b.3)最后，gateway 发送gateway found package应答包（GFAP），final macadd=GFP中的routehead中的macaddr， 沿着接收的路径返回
+
+2. gateway收到GFP，经过处理，如果发了GFAP包
+a) device 收到GFAP包后，hop--
+   a.1)如果本地没有gateway的信息，记录到达gateway的路由
+   a.2)如果本地有gateway的信息，更新到达gateway的路由，更新策略和device收到GFP的情况一样，都是通过比较hop，rssiv
+   a.3)查找本地路由表，如果有到达目的的路由，根据路由进行转发，如果hop==0，而且下一跳不是目的，drop it
+
+3. gateway 发路由交换包，多个gateway上都能到达的device，通过rssiv和hop数，确定只有一个能达到这个device
+
+
+4. device发路由存在确认包，在拔掉某一个device或gateway后，通过这个包，需要重新计算到达gateway的路由
+
+
+5. gateway 发送 device发现广播包
