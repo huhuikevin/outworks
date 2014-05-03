@@ -3,6 +3,9 @@
 
 #include "soc_25xx.h"
 
+#define DEVICE_TYPE_DEVICE 0
+#define DEVICE_TYPE_GATEWAY 1
+
 #define NOP()		 __Asm  nop 
 #define SLEEP()          __Asm  IDLE
 #define watchdog()       __Asm  CWDT

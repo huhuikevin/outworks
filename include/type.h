@@ -36,7 +36,7 @@
 #define BYTE_3(n)                    ((int8u)(BYTE_0((n) >> 24)))
 
 
- union SVR_LONG_B08{	
+union SVR_LONG_B08{	
 	unsigned char NumChar[4];
 	unsigned long NumLong;
 };
@@ -44,6 +44,8 @@ union SVR_INT_B08{
     unsigned char NumChar[2];	
     unsigned int NumInt;	
 };
+
+
 
 
 #endif /* __TYPE__H_ */

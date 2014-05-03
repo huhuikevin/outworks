@@ -4,6 +4,34 @@
 
 #define MAX_APP_DATA_LEN MSG_MAX_LEN
 #define MAC_ADDR_LEN 4
+#define LINKLAY_VERSION 0
+
+union mac_addr{	
+	unsigned char caddr[MAC_ADDR_LEN];
+	unsigned long laddr;
+};
+
+
+typedef struct {
+	uchar Version:2;
+	uchar ack_pkg:1;// 0:normal packaget, 1: ack package
+	uchar route:1;//route package
+	uchar seq:1; // 
+	uchar need_ack:1;// 1:need ack
+	uchar sender:1;//0:send by device, 1:send by gateway
+	uchar res:1;
+	mac_addr dst_addr;
+	uchar crc8;
+}linkhead_t; // 6 bytes
+#define ACK_PKG 1
+#define NORMAL_PKG 0
+
+
+
+typedef struct {
+	linkhead_t head;
+	uchar link_data[MAX_APP_DATA_LEN];
+}link_frame_t;
 
 typedef enum {
     MacPlc = 0,
