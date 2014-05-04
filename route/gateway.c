@@ -13,6 +13,14 @@ typedef struct {
 
 device_t device_tbl[CONFIG_GATEWAY_MNG_DEVICES];
 
+void gateway_process()
+{
+	route_frame_t rt_frame;
+	uchar len;
+	len = linklay_recv_data(&rt_frame, PROTOCOL_ROUTER);
+	if (len)
+		gateway_route_process(&rt_frame);
+}
 
 // process when recved the route data package
 void gateway_route_process(route_frame_t *prt)
@@ -64,7 +72,7 @@ void gateway_broadcast_selfaddr()
 	rt_frame.src_addr.laddr = self_mac.laddr;
 	rt_frame.route_type = ROUTETYPE_BCAST_GW_ADDR;
 	
-	rt_frame.hop = 1;
+	rt_frame.hop = 0;
 	dst_addr.laddr = 0xffffffff;
 	linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
 }
@@ -83,27 +91,29 @@ void gateway_found_device()
 	}
 }
 
-void gateway_send_fdp(route_t *proute)
+void gateway_send_fdp(device_t *pdev)
 {
 	route_frame_t rt_frame;
 	mac_addr dst_addr;
+	uchar i,len;
 
-	rt_frame.dst_addr.laddr = proute->dst_addr.laddr;
+	rt_frame.dst_addr.laddr = pdev->addr.laddr;
 	rt_frame.mac_type = MacPlc;
 	rt_frame.pass_addr.laddr = self_mac.laddr;
 	rt_frame.src_addr.laddr = self_mac.laddr;
 	rt_frame.route_type = ROUTETYPE_DFP;
-	
-	if (!proute->valide){
-		if (proute->hop == 0) {
-			rt_frame.hop = 1;
-			proute->hop = 1;
-			dst_addr.laddr = proute->dst_addr.laddr;
-		}else{
+	rt_frame.hop = 0;
 
+	pdev->rt_ticks = Timetick();
+
+	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
+		if (rt_table[i].valide){
+			dst_addr.laddr = rt_table[i].dst.laddr;
+			do {
+				len = linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
+				gateway_process();
+			}while(!len);
 		}
 	}
-	proute->rt_ticks = Timetick();
-	linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
 }
 

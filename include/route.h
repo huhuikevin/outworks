@@ -34,11 +34,14 @@ typedef struct {
 	int16u ticks;  //ticks, 
 	uchar valide:1;// used or not
 	uchar dir:1;//0:means gateway to device, 1: means device to gateway
-	uchar route_type:1;// 0:means not the direct connect route, 1:means direct connect route 
+	uchar route_type:1;// 0:means not the direct connect to gateway, 1:means direct connect to the gateway 
 }route_t;
 
 #define ROUTE_DIR_TODEVICE 0
 #define ROUTE_DIR_TOGATEWAY 1
+
+#define ROUTE_TYPE_INDIRECT_GATEWAY 0
+#define ROUTE_TYPE_DIRECT_GATEWAY 1
 
 typedef enum {
     rt_idle = 0,
