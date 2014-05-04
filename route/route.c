@@ -127,7 +127,7 @@ void route_sendto_next_hop(route_frame_t *prt)
 	prt->pass_addr.laddr = self_mac.laddr;
 	prt->mac_type = MacPlc;
 	prt->hop = CONFIG_MAX_HOP;
-	linklay_send_data(&prt->dst_addr, prt, sizeof(route_data_t));
+	linklay_send_data(&prt->dst_addr, prt, sizeof(route_frame_t));
 }
 void route_add(route_frame_t *prt)
 {

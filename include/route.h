@@ -6,11 +6,11 @@
 #define ROUTETYPE_DFP 0
 #define ROUTETYPE_DFAP 1
 #define ROUTETYPE_BT   2
-
+#define ROUTETYPE_BCAST_GW_ADDR 3
 typedef struct {
 	uchar mac_type:2;// 0: plc, 1:2.4G
 	uchar route_type:2; // 0: gateway send:device found package, 1: device ack the found  package, 2:the beatheart between the next hop and the device
-		
+		                          // 3: broadcast the gateway addr
 	uchar hop:4;//GFP:once through a device or gateway , hop++, and the linklayhead.Src = the deivce or gateway macaddr
 			   //GFAP:once through a device ,hop--, if hop==0 and not arrived at the dst, drop it
 	uchar rssiv;// 在link层被更新
@@ -35,10 +35,6 @@ typedef struct {
 	uchar valide:1;// used or not
 	uchar dir:1;//0:means gateway to device, 1: means device to gateway
 	uchar route_type:1;// 0:means not the direct connect route, 1:means direct connect route 
-#ifdef CONFIG_TYPE_AUTOGATEWAY	
-	uchar rt_stat:2;//0:send DFP, 1:wait for DFAP
-	int16u rt_ticks;// the s_ticks is the sendint the DFP time
-#endif	
 }route_t;
 
 #define ROUTE_DIR_TODEVICE 0
@@ -48,7 +44,7 @@ typedef enum {
     rt_idle = 0,
     rt_has_device,
     rt_waiting_fdap,
-    rt_valid,
+    rt_active,
 }rt_stat;
 #endif /*__ROUTE__H_*/
 
