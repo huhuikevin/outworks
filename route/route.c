@@ -94,7 +94,7 @@ void route_device_process(route_frame_t *prt)
 	// if me ,need to ack the gateway , so the gateway can know it can reached gateway
 	if (self_mac.laddr == prt->dst_addr.laddr){
 		route_ack_gateway(prt);
-	}else if (prt->route_type == ROUTETYPE_DFP){// if not me and DFP pkg ,forward it if hop-- != 0
+	}else if (prt->route_type != ROUTETYPE_BCAST_GW_ADDR){// if not me and DFP pkg ,forward it if hop-- != 0
 		route_sendto_next_hop(prt);// if hop==0, drop it
 	}
 }
@@ -142,7 +142,7 @@ void route_sendto_next_hop(route_frame_t *prt)
 		dst.laddr = proute->next.laddr;
 		linklay_send_data(&dst, prt, sizeof(route_frame_t));
 		return;
-	}else{//发给路由表中的下一跳
+	}else if (prt->route_type == ROUTETYPE_DFP){//发给路由表中的下一跳
 		dst.laddr = 0;
 		for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 			if (rt_table[i].valide && rt_table[i].route_type == ROUTE_TYPE_INDIRECT_GATEWAY){
@@ -153,12 +153,11 @@ void route_sendto_next_hop(route_frame_t *prt)
 				}while(!len);
 			}
 		}
-	}
-	if (!dst.laddr){//没有路由表直接发送给dst
-		dst.laddr = prt->dst_addr.laddr;
-		linklay_send_data(&dst, prt, sizeof(route_frame_t));
-	}
-		
+		if (!dst.laddr){//没有路由表直接发送给dst
+			dst.laddr = prt->dst_addr.laddr;
+			linklay_send_data(&dst, prt, sizeof(route_frame_t));
+		}		
+	}		
 	
 }
 void route_add(route_frame_t *prt)
