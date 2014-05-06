@@ -70,7 +70,7 @@ void gateway_broadcast_selfaddr()
 	rt_frame.mac_type = MacPlc;
 	rt_frame.pass_addr.laddr = self_mac.laddr;
 	rt_frame.src_addr.laddr = self_mac.laddr;
-	rt_frame.route_type = ROUTETYPE_BCAST_GW_ADDR;
+	rt_frame.route_type = ROUTETYPE_BCAST_GWADDR;
 	
 	rt_frame.hop = 0;
 	dst_addr.laddr = 0xffffffff;

@@ -94,7 +94,7 @@ void route_device_process(route_frame_t *prt)
 	// if me ,need to ack the gateway , so the gateway can know it can reached gateway
 	if (self_mac.laddr == prt->dst_addr.laddr){
 		route_ack_gateway(prt);
-	}else if (prt->route_type != ROUTETYPE_BCAST_GW_ADDR){// if not me and DFP pkg ,forward it if hop-- != 0
+	}else {// if not me and DFP pkg ,forward it if hop-- != 0
 		route_sendto_next_hop(prt);// if hop==0, drop it
 	}
 }
@@ -111,8 +111,9 @@ void route_process()
 void route_ack_gateway(route_frame_t *prt)
 {
 	route_t *proute;
-	if (prt->route_type == ROUTETYPE_DFP || prt->route_type == ROUTETYPE_BCAST_GW_ADDR) {
-		gateway_addr.laddr = prt->src_addr.laddr;
+	if (prt->route_type != ROUTETYPE_DFAP) {
+		if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
+			gateway_addr.laddr = prt->src_addr.laddr;
 	
 		prt->route_type = ROUTETYPE_DFAP;
 		prt->mac_type = MacPlc;
@@ -174,9 +175,9 @@ void route_add(route_frame_t *prt)
 			proute->dir = ROUTE_DIR_TODEVICE;
 		else if (prt->route_type == ROUTETYPE_DFAP)
 			proute->dir = ROUTE_DIR_TOGATEWAY;
-		else if (prt->route_type == ROUTETYPE_BT)
+		else if (prt->route_type == ROUTETYPE_BCAST_DEVADDR)
 			proute->dir = ROUTE_DIR_TOGATEWAY;
-		else if (prt->route_type == ROUTETYPE_BCAST_GW_ADDR)
+		else if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
 			proute->dir = ROUTE_DIR_TODEVICE;
 		proute->dst.laddr = prt->src_addr.laddr;
 		proute->next.laddr = prt->pass_addr.laddr;
@@ -186,7 +187,7 @@ void route_add(route_frame_t *prt)
 		proute->seq = 0;
 		proute->ticks = Timetick();
 		proute->valide = 1;
-		if (prt->route_type == ROUTETYPE_BCAST_GW_ADDR)
+		if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
 			proute->route_type = ROUTE_TYPE_DIRECT_GATEWAY;
 		else
 			proute->route_type = ROUTE_TYPE_INDIRECT_GATEWAY;
@@ -219,4 +220,20 @@ void route_update(route_frame_t *prt)
 	}
 }
 
+
+void device_broadcast_selfaddr()
+{
+	route_frame_t rt_frame;
+	mac_addr dst_addr;
+
+	rt_frame.dst_addr.laddr = 0xffffffff;
+	rt_frame.mac_type = MacPlc;
+	rt_frame.pass_addr.laddr = self_mac.laddr;
+	rt_frame.src_addr.laddr = self_mac.laddr;
+	rt_frame.route_type = ROUTETYPE_BCAST_DEVADDR;
+	
+	rt_frame.hop = 0;
+	dst_addr.laddr = 0xffffffff;
+	linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
+}
 

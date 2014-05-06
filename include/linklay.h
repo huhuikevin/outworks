@@ -18,8 +18,8 @@ typedef struct {
 	uchar protocol:1;//0: normal package, 1:route package
 	uchar seq:1; // 
 	uchar need_ack:1;// 1:need ack
-	uchar sender:1;//0:send by device, 1:send by gateway
-	uchar res:1;
+	//uchar sender:1;//0:send by device, 1:send by gateway
+	uchar res:2;
 	mac_addr dst_addr;//may be the next of the router or real dst
 	mac_addr rtdst_addr;// must be real dst
 }linkhead_t; // 6 bytes

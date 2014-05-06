@@ -5,12 +5,12 @@
 
 #define ROUTETYPE_DFP 0
 #define ROUTETYPE_DFAP 1
-#define ROUTETYPE_BT   2
-#define ROUTETYPE_BCAST_GW_ADDR 3
+#define ROUTETYPE_BCAST_DEVADDR   2
+#define ROUTETYPE_BCAST_GWADDR 3
 typedef struct {
 	uchar mac_type:2;// 0: plc, 1:2.4G
 	uchar route_type:2; // 0: gateway send:device found package, 1: device ack the found  package, 2:the beatheart between the next hop and the device
-		                          // 3: broadcast the gateway addr
+		                          // 3: broadcast the MY addr
 	uchar hop:4;//GFP:once through a device or gateway , hop++, and the linklayhead.Src = the deivce or gateway macaddr
 			   //GFAP:once through a device ,hop--, if hop==0 and not arrived at the dst, drop it
 	uchar rssiv;// 在link层被更新
