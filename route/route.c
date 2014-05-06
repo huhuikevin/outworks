@@ -78,25 +78,33 @@ route_t *route_found_useless()
 		return NULL;
 }
 
+uchar route_have_routes_to_device(void)
+{
+	uchar i;
+	
+	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
+		if (rt_table[i].valide){
+			if (gateway_addr.laddr != rt_table[i].dst.laddr){
+				return 1;
+			}
+		}
+	}
+	return 0;
 
-
+}
 void route_put_rt_item(route_t *proute)
 {
 	proute->valide = 0;
 }
 
-
-// process when recved the route data package
-void route_device_process(route_frame_t *prt)
+uchar route_up_next(mac_addr *paddr)
 {
-	route_update(prt);
+	if (!gateway_addr.laddr)
+		return 0;
+	if (route_found_by_dst(&gateway_addr) == NULL)
+		return 0;
 
-	// if me ,need to ack the gateway , so the gateway can know it can reached gateway
-	if (self_mac.laddr == prt->dst_addr.laddr){
-		route_ack_gateway(prt);
-	}else {// if not me and DFP pkg ,forward it if hop-- != 0
-		route_sendto_next_hop(prt);// if hop==0, drop it
-	}
+	return 1;
 }
 
 void route_process()
@@ -114,53 +122,11 @@ void route_ack_gateway(route_frame_t *prt)
 	if (prt->route_type != ROUTETYPE_DFAP) {
 		if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
 			gateway_addr.laddr = prt->src_addr.laddr;
-	
-		prt->route_type = ROUTETYPE_DFAP;
-		prt->mac_type = MacPlc;
-		prt->src_addr.laddr = self_mac.laddr;
-		prt->dst_addr.laddr = gateway_addr.laddr;
-		prt->hop = 0;
-		prt->pass_addr.laddr = self_mac.laddr;
-		proute = route_found_by_dst(&gateway_addr);
-		if (proute == NULL){
-			return;//never reached here
-		}
-		linklay_send_data(&proute->next_addr, prt, sizeof(route_frame_t));
+		device_send_dfap();
 	}
 }
-void route_sendto_next_hop(route_frame_t *prt)
-{
-	route_t *proute;
-	mac_addr dst;
-	uchar i,len;
 
-	prt->hop++;
 
-	prt->pass_addr.laddr = self_mac.laddr;
-	prt->mac_type = MacPlc;
-	proute = route_found_by_dst(&prt->dst_addr);
-	if (proute){//如果有路由直接发给next
-		dst.laddr = proute->next.laddr;
-		linklay_send_data(&dst, prt, sizeof(route_frame_t));
-		return;
-	}else if (prt->route_type == ROUTETYPE_DFP){//发给路由表中的下一跳
-		dst.laddr = 0;
-		for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
-			if (rt_table[i].valide && rt_table[i].route_type == ROUTE_TYPE_INDIRECT_GATEWAY){
-				dst.laddr = rt_table[i].next.laddr;
-				do {
-					len = linklay_send_data(&dst, prt, sizeof(route_frame_t));
-					//route_process();
-				}while(!len);
-			}
-		}
-		if (!dst.laddr){//没有路由表直接发送给dst
-			dst.laddr = prt->dst_addr.laddr;
-			linklay_send_data(&dst, prt, sizeof(route_frame_t));
-		}		
-	}		
-	
-}
 void route_add(route_frame_t *prt)
 {
 	route_t *proute;
@@ -171,7 +137,7 @@ void route_add(route_frame_t *prt)
 	}
 	if (proute)
 	{//new one
-		if (prt->route_type == ROUTETYPE_DFP)
+		if (prt->route_type == ROUTETYPE_MCAST_DFP)
 			proute->dir = ROUTE_DIR_TODEVICE;
 		else if (prt->route_type == ROUTETYPE_DFAP)
 			proute->dir = ROUTE_DIR_TOGATEWAY;
@@ -218,22 +184,5 @@ void route_update(route_frame_t *prt)
 		//if (prt->mac_type == )
 		// to be done
 	}
-}
-
-
-void device_broadcast_selfaddr()
-{
-	route_frame_t rt_frame;
-	mac_addr dst_addr;
-
-	rt_frame.dst_addr.laddr = 0xffffffff;
-	rt_frame.mac_type = MacPlc;
-	rt_frame.pass_addr.laddr = self_mac.laddr;
-	rt_frame.src_addr.laddr = self_mac.laddr;
-	rt_frame.route_type = ROUTETYPE_BCAST_DEVADDR;
-	
-	rt_frame.hop = 0;
-	dst_addr.laddr = 0xffffffff;
-	linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
 }
 

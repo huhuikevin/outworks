@@ -13,18 +13,25 @@ typedef struct {
 
 device_t device_tbl[CONFIG_GATEWAY_MNG_DEVICES];
 
-void gateway_process()
+void gateway_route_process()
 {
 	route_frame_t rt_frame;
 	uchar len;
 	len = linklay_recv_data(&rt_frame, PROTOCOL_ROUTER);
 	if (len)
-		gateway_route_process(&rt_frame);
+		_gateway_route_process(&rt_frame);
 }
 
 // process when recved the route data package
-void gateway_route_process(route_frame_t *prt)
+void _gateway_route_process(route_frame_t *prt)
 {
+	if (prt->route_type == ROUTETYPE_BCAST_DEVADDR){
+		if (prt->hop == 0)//can direct connect
+			gateway_broadcast_selfaddr();
+		else{
+			gateway_mcast_fdp( &prt->src_addr);
+		}
+	}
 	if (prt->route_type == ROUTETYPE_DFAP) {
 		route_update(prt);
 		gateway_set_device_active(&prt->src_addr);
@@ -91,29 +98,26 @@ void gateway_found_device()
 	}
 }
 
-void gateway_send_fdp(device_t *pdev)
+void gateway_send_fdp(mac_addr *ppassaddr, mac_addr *paddr)
 {
 	route_frame_t rt_frame;
-	mac_addr dst_addr;
 	uchar i,len;
 
-	rt_frame.dst_addr.laddr = pdev->addr.laddr;
+	rt_frame.dst_addr.laddr = paddr->laddr;
 	rt_frame.mac_type = MacPlc;
 	rt_frame.pass_addr.laddr = self_mac.laddr;
 	rt_frame.src_addr.laddr = self_mac.laddr;
-	rt_frame.route_type = ROUTETYPE_DFP;
+	rt_frame.route_type = ROUTETYPE_MCAST_DFP;
 	rt_frame.hop = 0;
 
-	pdev->rt_ticks = Timetick();
+	linklay_send_data(ppassaddr, &rt_frame, sizeof(rt_frame));
+}
 
-	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
-		if (rt_table[i].valide){
-			dst_addr.laddr = rt_table[i].dst.laddr;
-			do {
-				len = linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
-				gateway_process();
-			}while(!len);
-		}
-	}
+void gateway_mcast_fdp(mac_addr *paddr)
+{
+	mac_addr baddr;
+	baddr.laddr = 0x00000000;
+
+	gateway_send_fdp(&baddr, paddr);
 }
 

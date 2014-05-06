@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-#define ROUTETYPE_DFP 0
+#define ROUTETYPE_MCAST_DFP 0
 #define ROUTETYPE_DFAP 1
 #define ROUTETYPE_BCAST_DEVADDR   2
 #define ROUTETYPE_BCAST_GWADDR 3
