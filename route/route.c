@@ -1,16 +1,13 @@
 #include "config.h"
 #include <hic.h>
 #include "type.h"
-#include "system.h"
 #include "tool.h"
-#include "plc.h"
+
 
 /*
 dst  passaddr     src    final dst
 
 */
-section32 route_t rt_table[CONFIG_ROUTE_TABLE_SIZE];
-mac_addr gateway_addr;
 
 void route_init()
 {
@@ -97,16 +94,8 @@ void route_put_rt_item(route_t *proute)
 	proute->valide = 0;
 }
 
-uchar route_up_next(mac_addr *paddr)
-{
-	if (!gateway_addr.laddr)
-		return 0;
-	if (route_found_by_dst(&gateway_addr) == NULL)
-		return 0;
 
-	return 1;
-}
-
+#if 0
 void route_process()
 {
 	route_frame_t rt_frame;
@@ -115,16 +104,8 @@ void route_process()
 	if (len)
 		route_device_process(&rt_frame);
 }
+#endif
 
-void route_ack_gateway(route_frame_t *prt)
-{
-	route_t *proute;
-	if (prt->route_type != ROUTETYPE_DFAP) {
-		if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
-			gateway_addr.laddr = prt->src_addr.laddr;
-		device_send_dfap();
-	}
-}
 
 
 void route_add(route_frame_t *prt)
@@ -184,5 +165,22 @@ void route_update(route_frame_t *prt)
 		//if (prt->mac_type == )
 		// to be done
 	}
+}
+
+
+route_t *route_process_timeout()
+{
+	uchar i;
+	
+	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
+		if (rt_table[i].valide){
+			if (IsTimeOut(rt_table[i].ticks + ROUTE_MAX_LIFTCYCLE))
+			{
+				rt_table[i].valide = 0;
+				return &rt_table[i];
+			}
+		}
+	}
+	return NULL;
 }
 

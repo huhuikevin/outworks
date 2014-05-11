@@ -27,7 +27,6 @@ typedef struct {
 #define PROTOCOL_ROUTER 0
 
 
-
 typedef struct {
 	linkhead_t head;
 	uchar link_data[MAX_APP_DATA_LEN];
