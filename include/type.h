@@ -1,9 +1,16 @@
 #ifndef __TYPE__H_
 #define __TYPE__H_
 
+typedef unsigned char   uint8_t;     
+typedef unsigned int    uint16_t;
+typedef unsigned long   uint32_t;
 
-//#define TRUE 1
-//#define FALSE 0
+typedef signed char     int8_t;     
+typedef signed int      int16_t;
+typedef signed long     int32_t;
+
+
+
 #define ulong	  unsigned long
 #define	uint	  unsigned int
 #define	uchar	  unsigned char
@@ -18,10 +25,14 @@
 #define TRUE      1
 #define FALSE     0
 
+#define uint8_t unsigned char
+
+
 #define int8u unsigned char
 #define int16u unsigned int 
 #define int32u unsigned long   
 #define int16s signed int 
+
 #define PGM  const int8u  * 
 #define LOW_BYTE(n)                     ((int8u)((n) & 0xFF))
 #define HIGH_BYTE(n)                    ((int8u)(LOW_BYTE((n) >> 8)))
