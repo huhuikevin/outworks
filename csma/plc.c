@@ -546,9 +546,11 @@ uint8_t plc_data_send(uint8_t *data, uint8_t length)
     uint16_t crcval;
     
     if ((length > 63) || (length == 0)) {
-        return FAILED;  //数据长度错误
+        return 0;  //数据长度错误
     }
-    
+    //如果正在发送或已经接收到同步信号
+    if (_plc_state == SEND || _frame_sync.valid == 1)
+	 return 0;
     mmemcpy(&_send_buf.data[2], data, length);
     crcval = plc_crc_tx(data[0], 0xFFFF);
     for (i = 1; i < length; i++) {
@@ -567,7 +569,7 @@ uint8_t plc_data_send(uint8_t *data, uint8_t length)
     
     _plc_state = SEND;  // 开始发送数据
     
-    return SUCCEED;
+    return length;
 }
 
 /**************************************************************************
