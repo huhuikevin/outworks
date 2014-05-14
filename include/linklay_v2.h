@@ -20,11 +20,11 @@ typedef struct {
 	uchar need_ack:1;// 1:need ack
 	//uchar sender:1;//0:send by device, 1:send by gateway
 	uchar res:2;
-	mac_addr dst_addr;//may be the next of the router or real dst
+	//mac_addr dst_addr;//may be the next of the router or real dst
 	mac_addr rtdst_addr;// must be real dst
 }linkhead_t; // 6 bytes
 #define PROTOCOL_NORMAL 0
-#define PROTOCOL_ROUTER 0
+#define PROTOCOL_ROUTER 1
 
 
 typedef struct {
