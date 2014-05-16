@@ -11,6 +11,13 @@ union mac_addr{
 	unsigned long laddr;
 };
 
+typedef struct{
+	//mac_addr next;
+	mac_addr dest;
+	uint8_t      protocol;
+	uint8_t      mac;
+	uint8_t      needack;
+}linkaddr_t;
 
 typedef struct {
 	uchar Version:2;

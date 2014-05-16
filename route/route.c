@@ -57,6 +57,16 @@ route_t *route_found_by_dst(mac_addr *pdst)
 	return NULL;
 }
 
+
+mac_addr *route_found_next_by_dst(mac_addr *pdst)
+{
+	route_t *proute = route_found_by_dst(pdst);
+	if (proute){
+		return &proute->next;
+	}
+	return NULL;
+}
+
 route_t *route_found_useless()
 {
 	uchar i, founded;

@@ -23,7 +23,9 @@ void gateway_route_process()
 {
 	route_frame_t rt_frame;
 	uchar len;
-	len = linklay_recv_data(&rt_frame, PROTOCOL_ROUTER);
+	uint8_t rssiv;
+
+	len = linklay_recv_data_with_rssi(&rt_frame, MacPlc, &rssiv);
 	if (len)
 		gateway_process_device(&rt_frame);
 
@@ -69,7 +71,7 @@ void gateway_inq_addr(mac_addr *paddr)
 	
 	rt_frame.hop = 0;
 	
-	linklay_send_data(&proute->dst, &rt_frame, sizeof(rt_frame));	
+	linklay_send_route_data(&proute->dst, &rt_frame, sizeof(rt_frame));	
 }
 void gateway_route_timeout()
 {
@@ -155,7 +157,7 @@ void gateway_broadcast_selfaddr()
 	
 	rt_frame.hop = 0;
 	dst_addr.laddr = 0xffffffff;
-	linklay_send_data(&dst_addr, &rt_frame, sizeof(rt_frame));
+	linklay_send_route_data(&dst_addr, &rt_frame, sizeof(rt_frame));
 }
 
 uchar _gateway_found_device1()
@@ -218,7 +220,7 @@ void gateway_send_fdp(mac_addr *ppassaddr, mac_addr *paddr)
 	rt_frame.route_type = ROUTETYPE_MCAST_DFP;
 	rt_frame.hop = 0;
 
-	linklay_send_data(ppassaddr, &rt_frame, sizeof(rt_frame));
+	linklay_send_route_data(ppassaddr, &rt_frame, sizeof(rt_frame));
 }
 
 void gateway_mcast_fdp(mac_addr *paddr)
