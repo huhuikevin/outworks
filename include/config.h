@@ -21,8 +21,8 @@
 #endif
 
 //#define CONFIG_200BPS_PLC 1
-#define CONFIG_400BPS_PLC 1
-
+//#define CONFIG_400BPS_PLC 1
+#define CONFIG_PLC_ENABLE_IO PC1
 #define CONFIG_UART 1
 
 #ifdef CONFIG_UART
@@ -42,7 +42,7 @@
 #define CONFIG_SPI_MISO PC4
 #endif
 
-#define CONFIG_RLED PB5
+#define CONFIG_RLED_IO PB5
 
 //#define CONFIG_HW2000 1
 #endif/* __CONFIG__H_ */

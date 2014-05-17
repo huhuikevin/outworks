@@ -13,6 +13,7 @@
 **************************************************************************/
 #include <hic.h>
 #include "type.h"
+#include "config.h"
 #include "plc_mac.h"
 #include "plc.h"
 #include "system.h"
@@ -22,13 +23,14 @@
 #include "rand.h"
 #include "timer16n.h"
 
-#ifdef CONFIG_RLED
-#define RLED_ON() CONFIG_RLED=1
-#define RLED_OFF() CONFIG_RLED=0
+#ifdef CONFIG_RLED_IO
+#define RLED_ON() CONFIG_RLED_IO=1
+#define RLED_OFF() CONFIG_RLED_IO=0
 #else
 #define RLED_ON() NOP()
 #define RLED_OFF() NOP()
 #endif
+#define CSMA_DB (int8_t)(-30)
 /**************************************************************************
 * 函数名称：plc_mac_proc
 * 功能描述：mac处理流程,处理载波侦听冲突重发和接收
@@ -67,7 +69,7 @@ void plc_mac_proc(void)
         }    
     }
      
-    if ((_mac_tx_buf.stat == tx_csma) && (_mac_csma.timeout == _sys_tick) ) {
+    if ((_mac_tx_buf.stat == tx_csma) && (_mac_csma.timeout <= _sys_tick) ) {
         //_mac_csma.timeout = 0;
         _mac_tx_buf.stat = tx_request;
     }
@@ -76,10 +78,10 @@ void plc_mac_proc(void)
         //_mac_tx_buf.request = 0;          
         //_mac_tx_buf.count++;
         
-        if ((int8_t)_listen_buf.rssi < -56) {   //空闲直接发射    
+        if ((int8_t)_listen_buf.rssi < CSMA_DB) {   //空闲直接发射    
             _mac_tx_buf.listen = 0;    
             
-            RLED_ON();
+            //RLED_ON();
             
             plc_tx_en();
             plc_sent = plc_data_send(&_mac_tx_buf.mac_frame, _mac_tx_buf.mac_frame.len);
@@ -92,7 +94,7 @@ void plc_mac_proc(void)
         }
         else {
 	     _mac_tx_buf.stat = tx_csma;
-            RLED_OFF();   
+            //RLED_OFF();   
         }  
     }
 
@@ -105,7 +107,7 @@ void plc_mac_proc(void)
     }
 	
     if (_mac_tx_buf.listen == 1) {  //指数退避
-        if ((int8_t)_listen_buf.rssi < -56) { 
+        if ((int8_t)_listen_buf.rssi < CSMA_DB) { 
             _mac_tx_buf.listen = 0;
         
             _mac_csma.timeout = (rand() / (32768 / (2^_mac_csma.back + 1)));
@@ -185,7 +187,7 @@ uint8_t plc_mac_rx_with_rssi(uint8_t *pdata, uint8_t *prssiv)
 
      _mac_rx_buf.indication = 0;
 	 
-    MMemcmp(pdata, _mac_rx_buf.mac_frame.data, _mac_rx_buf.length);
+    MMemcpy(pdata, _mac_rx_buf.mac_frame.data, _mac_rx_buf.length);
 
     if (prssiv)
         *prssiv = _mac_rx_buf.rssiv;
@@ -214,7 +216,7 @@ void plc_mac_init(uint8_t back, uint8_t slot)
 {
 	init_t16g1();
     plc_init();
-
+	plc_rx_en();
     _mac_csma.timeout = 0;
       
     _mac_tx_buf.stat = tx_idle;

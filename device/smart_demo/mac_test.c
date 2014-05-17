@@ -3,7 +3,7 @@
 #include "tool.h"
 #include "debug.h"
 #include "system.h"
-
+#include "timer16n.h"
 extern uint8_t plc_mac_tx(mac_addr *pdst, uint8_t *data, uint8_t length);
 extern uint8_t plc_mac_rx_with_rssi(uint8_t *pdata, uint8_t *prssiv);
 extern void plc_mac_proc();
@@ -41,8 +41,8 @@ void send_process()
 	addr.laddr = 0xffffffff;
     	
     len = plc_mac_tx(&addr, app_data, 8);
-    if (len){
-        DelayMs(2000);
+    if (len == 0){
+        delay_ms(2000);
     }
 }
 
@@ -55,7 +55,7 @@ int8u recv_process()
         if (app_data[7] == 0x55 )
         {
 			OpenRLed;
-			DelayMs(50);
+			delay_ms(500);
 			CloseRLed;
         }
     }
@@ -73,6 +73,8 @@ void app_process(void)
 void sys_app_process()
 {
 	plc_mac_proc();
+	watchdog();
 	app_process();
+	watchdog();
 }
 

@@ -31,7 +31,7 @@
 void init_t16g1(void)
 {
     T16G1CL=0x21;   //(Fosc/2) 4:1预分频,每周期0.4ms 
-    T16G1CH=0x05;   //上升沿捕获
+    T16G1CH=0x04;   //下降沿捕获
     
     T16G1IF=0;      
     T16G1IE=1;     

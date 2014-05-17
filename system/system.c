@@ -28,7 +28,6 @@ void RAM_Clr(void) //ramÈ«Çå
   } 
 }
 
-
 void main(void)
 {
     RAM_Clr();

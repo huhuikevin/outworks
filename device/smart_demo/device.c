@@ -40,7 +40,7 @@ void board_init()
  
 	plc_mac_init(50,2);
     //timer8n_init();
-
+	
 #ifdef CONFIG_LINKLAY_UART	
 	UartInit(CONFIG_LINKLAY_UART, 9600);
 #endif

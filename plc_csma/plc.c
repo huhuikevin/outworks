@@ -29,11 +29,19 @@
 **************************************************************************/
 #include <hic.h>
 #include "type.h"
+#include "config.h"
 #include "system.h"
 #include "plc.h"
 #include "timer16n.h"
 #include "tool.h"
 
+#define tx_pa_enable(en) \
+do { \
+	if (en) \
+		CONFIG_PLC_ENABLE_IO = 1; \
+	else \
+		CONFIG_PLC_ENABLE_IO = 0; \
+}while(0);
 /**************************************************************************
 * 函数名称：plc_write_reg
 * 功能描述：plc间接寻址写操作
@@ -203,12 +211,13 @@ void plc_init(void)
 **************************************************************************/
 void plc_tx_en(void)
 {
+#if 0
     _send_buf.valid = 0;  
     _send_buf.bitdata = 0; 
     _send_buf.bitoff = 0; 
     _send_buf.byteoff = 0; 
     _send_buf.length = 0;  
-         
+#endif         
     _listen_buf.valid = 0;
     _listen_buf.rssi = 0x81;
     
@@ -218,7 +227,7 @@ void plc_tx_en(void)
     plc_write_reg(PLC_11H_DACT0,0x32);  //DA输出功率控制寄存器
     plc_write_reg(PLC_12H_PAMPT0,0x23); //发射功率设置
     
-    PA2 = 1;                            //PA使能
+    tx_pa_enable(1);                            //PA使能
 }
 
 /**************************************************************************
@@ -235,7 +244,7 @@ void plc_rx_en(void)
 {
     uint8_t i;
     
-    PA2 = 0;   //PA禁能
+    tx_pa_enable(0);   //PA禁能
     
     plc_write_reg(PLC_06H_LPFT,0xB1);   // deadbeef
     plc_write_reg(PLC_11H_DACT0,0x13);  //DA输出功率控制寄存器
@@ -462,7 +471,7 @@ void plc_send_proc(void)
         PLC_MOD = 0x00; //发射禁能
         
         if (!_send_buf.valid) { //发射结束转接收 
-            PA2 = 0;   //PA禁能
+            tx_pa_enable(0);   //PA禁能
                             
             PLC_RW = 0x02;      //写使能
             PLC_ADDR = PLC_06H_LPFT;      //间接寻址
@@ -989,13 +998,13 @@ void isr(void) interrupt
 	     init_t16g2(0);
         _sys_tick++;
         _t16g1_valid = 1;
-	     T16G2IF = 0;
+	     T16G1IF = 0;
      }
 
     if (T16G2IF && T16G2IE) {       //1   
         T16G2IE = 0; 
 	     T16G2IF = 0;        
-        T16G2IF = 0;
+        T16G1IF = 0;
         
         switch (_plc_state) {        
         case SEND: {    
