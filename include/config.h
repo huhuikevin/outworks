@@ -42,6 +42,7 @@
 #define CONFIG_SPI_MISO PC4
 #endif
 
+#define CONFIG_RLED PB5
 
 //#define CONFIG_HW2000 1
 #endif/* __CONFIG__H_ */

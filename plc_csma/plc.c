@@ -29,9 +29,10 @@
 **************************************************************************/
 #include <hic.h>
 #include "type.h"
+#include "system.h"
 #include "plc.h"
-#include "timer.h"
-#include "ram.h"
+#include "timer16n.h"
+#include "tool.h"
 
 /**************************************************************************
 * 函数名称：plc_write_reg
@@ -551,7 +552,7 @@ uint8_t plc_data_send(uint8_t *data, uint8_t length)
     //如果正在发送或已经接收到同步信号
     if (_plc_state == SEND || _frame_sync.valid == 1)
 	 return 0;
-    mmemcpy(&_send_buf.data[2], data, length);
+    MMemcpy(&_send_buf.data[2], data, length);
     crcval = plc_crc_tx(data[0], 0xFFFF);
     for (i = 1; i < length; i++) {
         crcval = plc_crc_tx(data[i], crcval);
@@ -978,6 +979,55 @@ uint16_t plc_crc_tx(uint8_t data, uint8_t regval)
     
     return regval; 
 }
+
+
+void isr(void) interrupt 
+{	
+    uint8_t j;
+    
+	 if (T16G1IF && T16G1IE) {
+	     init_t16g2(0);
+        _sys_tick++;
+        _t16g1_valid = 1;
+	     T16G2IF = 0;
+     }
+
+    if (T16G2IF && T16G2IE) {       //1   
+        T16G2IE = 0; 
+	     T16G2IF = 0;        
+        T16G2IF = 0;
+        
+        switch (_plc_state) {        
+        case SEND: {    
+           DELAY3NOP();  //与REC对齐
+           if (_t16g1_valid) {          
+                init_t16g2(1);
+                _t16g1_valid = 0;
+            }
+            plc_send_proc();    
+            break;            
+            }            
+        case RECV: {
+            if (_t16g1_valid) {          
+                init_t16g2(1);
+                _t16g1_valid = 0;
+            }
+            plc_recv_proc();
+            DELAY1NOP();
+            break;
+            }
+        case IDLE: {
+            NOP();
+            break;
+            }
+        default:
+            NOP();
+            break;        
+        }
+    }
+
+}
+
 
 
 

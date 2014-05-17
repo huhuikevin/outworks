@@ -11,21 +11,11 @@ typedef signed long     int32_t;
 
 
 
-#define ulong	  unsigned long
-#define	uint	  unsigned int
-#define	uchar	  unsigned char
-#define	uintd	  unsigned int	data
-#define	uchard	  unsigned char	data
-#define	uintb	  unsigned int	bdata
-#define	ucharb	  unsigned char	bdata
-#define	uinti	  unsigned int	idata
-#define	uchari	  unsigned char	idata
+
 #define BOOL      char
 
 #define TRUE      1
 #define FALSE     0
-
-#define uint8_t unsigned char
 
 
 #define int8u unsigned char
@@ -56,7 +46,11 @@ union SVR_INT_B08{
     unsigned int NumInt;	
 };
 
-
-
+#define MAC_ADDR_LEN 4
+typedef union {	
+	unsigned char caddr[MAC_ADDR_LEN];
+	unsigned long laddr;
+}mac_addr;
 
 #endif /* __TYPE__H_ */
+

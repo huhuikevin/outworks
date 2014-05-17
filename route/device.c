@@ -96,7 +96,7 @@ void device_send_dfap()
 	if (proute == NULL){
 		return;//never reached here
 	}
-	linklay_send_route_data(&proute->next_addr, &rt_frame, sizeof(route_frame_t));
+	linklay_send_route_data(&proute->next_addr, &rt_frame, sizeof(route_frame_t), MacPlc);
 }
 
 void device_sendto_next_hop(route_frame_t *prt)
@@ -116,7 +116,7 @@ void device_sendto_next_hop(route_frame_t *prt)
 			if (proute){//如果有到网关的路由直接发给next
 				dst.laddr = proute->next.laddr;
 				prt->dst_addr.laddr = gateway_addr.laddr;
-				linklay_send_route_data(&dst, prt, sizeof(route_frame_t));
+				linklay_send_route_data(&dst, prt, sizeof(route_frame_t), MacPlc);
 			}
 		}
 		return;
@@ -130,10 +130,10 @@ void device_sendto_next_hop(route_frame_t *prt)
 	}else if (prt->route_type == ROUTETYPE_MCAST_DFP){
 		if (route_have_routes_to_device()){// 有到device的路由
 			dst.laddr = 0x00000000;// mcast the DFP
-			linklay_send_route_data(&dst, prt, sizeof(route_frame_t));
+			linklay_send_route_data(&dst, prt, sizeof(route_frame_t), MacPlc);
 		}else {//没有路由表直接发送给dst
 			dst.laddr = prt->dst_addr.laddr;
-			linklay_send_route_data(&dst, prt, sizeof(route_frame_t));
+			linklay_send_route_data(&dst, prt, sizeof(route_frame_t), MacPlc);
 		}		
 	}		
 	
@@ -153,7 +153,7 @@ void device_broadcast_selfaddr()
 	
 	rt_frame.hop = 0;
 	dst_addr.laddr = 0xffffffff;
-	linklay_send_route_data(&dst_addr, &rt_frame, sizeof(rt_frame));
+	linklay_send_route_data(&dst_addr, &rt_frame, sizeof(rt_frame), MacPlc);
 }
 
 void device_route_init()

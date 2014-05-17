@@ -2,13 +2,15 @@
 #include <hic.h>
 #include "type.h"
 #include "system.h"
-#include "timer8n.h"
-#include "linklay.h"
+#include "timer16n.h"
+//#include "linklay.h"
 
 mac_addr self_mac;
 
 void sys_app_process();
 void board_init();
+void plc_recv_proc();
+void plc_send_proc();
 
 void RAM_Clr(void) //ramÈ«Çå
 {
@@ -36,7 +38,7 @@ void main(void)
     flash_read(CONFIG_MACADDR_FLASHADDR, &self_mac, sizeof(self_mac));
 #endif
     //timer8N();
-    linklay_init();
+    //linklay_init();
     do {
         watchdog();
         enable_irq();
@@ -44,3 +46,4 @@ void main(void)
         sys_app_process();
     }while(1);
 }
+

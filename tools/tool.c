@@ -1,3 +1,4 @@
+#include "type.h"
 #include "system.h"
 #include "tool.h"
 //#include "uart.h"
@@ -58,10 +59,10 @@ int8u MMemcmp( void *buf1,  void *buf2, int8u count)
 ** 函数原型: void Delay(uchar MS); **
 ** 功    能: 延时time=MS ms.     **
 ************************************/
-void DelayMs(uint MS)
+void DelayMs(uint32_t MS)
 {
-    uint aa;//,ucB;
-    uchar bb;
+    uint32_t aa;//,ucB;
+    uint8_t bb;
     for(aa=0;aa<MS;aa++) 
     {
         for(bb=0;bb<0xFC;)

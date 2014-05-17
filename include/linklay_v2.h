@@ -3,13 +3,7 @@
 #define __LINKLAY__H_
 
 #define MAX_APP_DATA_LEN MSG_MAX_LEN
-#define MAC_ADDR_LEN 4
 #define LINKLAY_VERSION 0
-
-union mac_addr{	
-	unsigned char caddr[MAC_ADDR_LEN];
-	unsigned long laddr;
-};
 
 typedef struct{
 	//mac_addr next;

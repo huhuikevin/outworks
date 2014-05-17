@@ -2,10 +2,10 @@
 #include "config.h"
 #include "type.h"
 #include "tool.h"
-#include "soc_25xx.h"
-#include "plc.h"
-#include "timer8n.h"
-#include "uart.h"
+//#include "soc_25xx.h"
+#include "plc_mac.h"
+//#include "timer8n.h"
+//#include "uart.h"
 
 void iniSCI(void)
 {
@@ -37,8 +37,9 @@ void IO_Init(void)
 void board_init()
 {
     IO_Init();
-    plc_init(); 
-    timer8n_init();
+ 
+	plc_mac_init(50,2);
+    //timer8n_init();
 
 #ifdef CONFIG_LINKLAY_UART	
 	UartInit(CONFIG_LINKLAY_UART, 9600);

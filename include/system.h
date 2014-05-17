@@ -1,7 +1,7 @@
 #ifndef __SYSTEM__H_
 #define __SYSTEM__H_
 
-#include "soc_25xx.h"
+//#include "soc_25xx.h"
 
 #define DEVICE_TYPE_DEVICE 0
 #define DEVICE_TYPE_GATEWAY 1
@@ -24,5 +24,10 @@
 
 #define SYNC_WORD 0x7e
 #define FRAME_START 0xaa
+
+extern mac_addr self_mac;
+
+#define BROADCAST_ADDR 0xffffffff
+#define MULTICAST_ADDR 0x00000000
 
 #endif /* __SYSTEM__H_ */

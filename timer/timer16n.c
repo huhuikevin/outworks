@@ -15,11 +15,12 @@
 **************************************************************************/
 #include <hic.h>
 #include "type.h"
-#include "timer.h"
+#include "system.h"
+#include "timer16n.h"
 
 /**************************************************************************
-* 函数名称：init_t16g2
-* 功能描述：T16G2定时器工作模式设置为捕获模式
+* 函数名称：init_t16g1
+* 功能描述：T16G1定时器工作模式设置为捕获模式
 * 输入参数：无
 * 返回参数：无
 * 函数作者：
@@ -27,13 +28,13 @@
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-void init_t16g2(void)
+void init_t16g1(void)
 {
-    T16G2CL=0x21;   //(Fosc/2) 4:1预分频,每周期0.4ms 
-    T16G2CH=0x05;   //上升沿捕获
+    T16G1CL=0x21;   //(Fosc/2) 4:1预分频,每周期0.4ms 
+    T16G1CH=0x05;   //上升沿捕获
     
-    T16G2IF=0;      
-    T16G2IE=1;     
+    T16G1IF=0;      
+    T16G1IE=1;     
     
     _t16g1_valid = 0;
 }
@@ -49,7 +50,7 @@ void init_t16g2(void)
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-void init_t16g1(uint8_t type)
+void init_t16g2(uint8_t type)
 {
     uint16_t t16g2, t16g2r, delta;
         
@@ -57,8 +58,8 @@ void init_t16g1(uint8_t type)
         delta = 0xC350;     //过零后10ms产生中断 
     }
     else {
-        t16g2r = T16G2RH*256 + T16G2RL;
-        t16g2 = T16G2H*256 + T16G2L;
+        t16g2r = T16G1RH*256 + T16G1RL;
+        t16g2 = T16G1H*256 + T16G1L;
     
         if (t16g2 > t16g2r) {        
             delta = t16g2 - t16g2r; 
@@ -71,19 +72,19 @@ void init_t16g1(uint8_t type)
         delta = 0xA604 - delta*2; //过零后8.5ms产生中断    
     }
     
-    T16G1CH=0x0b;   //匹配时复位T16GxH/T16GxL
-    T16G1CL=0x10;	  //2:1预分频,每周期0.2ms,关闭定时器
+    T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
+    T16G2CL=0x10;	  //2:1预分频,每周期0.2ms,关闭定时器
     
-    T16G1RH=delta/256;   //过零后7ms产生中断 
-    T16G1RL=delta;
+    T16G2RH=delta/256;   //过零后7ms产生中断 
+    T16G2RL=delta;
     
-    T16G1L=0x00;
-    T16G1H=0x00; 
+    T16G2L=0x00;
+    T16G2H=0x00; 
     
-    T16G1CL=0x11;	    //使能比较器,(Fosc/2) 2:1预分频,每周期0.2ms 
+    T16G2CL=0x11;	    //使能比较器,(Fosc/2) 2:1预分频,每周期0.2ms 
     
-    T16G1IF=0;
-    T16G1IE=1;
+    T16G2IF=0;
+    T16G2IE=1;
 }
 
 /**************************************************************************
@@ -107,7 +108,7 @@ void delay_ms(uint16_t ms)
     for (i = 0; i < 10*ms; i++) {
         while (T8NIF == 0);     //0.1024ms delay
         T8NIF = 0;
-        WDT();
+        watchdog();
     }
 }
 

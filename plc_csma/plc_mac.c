@@ -13,13 +13,22 @@
 **************************************************************************/
 #include <hic.h>
 #include "type.h"
-#include "mac.h"
+#include "plc_mac.h"
 #include "plc.h"
-#include "io.h"
-#include "ram.h"
+#include "system.h"
+//#include "io.h"
+//#include "ram.h"
+#include "tool.h"
 #include "rand.h"
-#include "timer.h"
+#include "timer16n.h"
 
+#ifdef CONFIG_RLED
+#define RLED_ON() CONFIG_RLED=1
+#define RLED_OFF() CONFIG_RLED=0
+#else
+#define RLED_ON() NOP()
+#define RLED_OFF() NOP()
+#endif
 /**************************************************************************
 * 函数名称：plc_mac_proc
 * 功能描述：mac处理流程,处理载波侦听冲突重发和接收
@@ -42,7 +51,7 @@ void plc_mac_proc(void)
             if (pframe->dst.laddr == self_mac.laddr ||
 				pframe->dst.laddr == BROADCAST_ADDR ||
 				pframe->dst.laddr == MULTICAST_ADDR) {
-                mmemcpy(&_mac_rx_buf.mac_frame, pframe, 
+                MMemcpy(&_mac_rx_buf.mac_frame, pframe, 
                         pframe->len); 
                 _mac_rx_buf.indication = 1;
 				_mac_rx_buf.length = pframe->len - (sizeof(mac_frame_t) - MSDU_MAX_LEN);
@@ -128,13 +137,13 @@ uint8_t plc_mac_tx(mac_addr *pdst, uint8_t *data, uint8_t length)
     _mac_tx_buf.stat = tx_request;
     _mac_tx_buf.confirm = 0x55; //初始化
     _mac_tx_buf.listen = 0;  
-    _mac_tx_buf.timeout = 0;
-    _mac_tx_buf.count = 0;
+    //    _mac_tx_buf.timeout = 0;
+    //    _mac_tx_buf.count = 0;
     _mac_tx_buf.length = length;
     _mac_tx_buf.mac_frame.len = length + sizeof(mac_addr) + 1;
     _mac_tx_buf.mac_frame.dst.laddr = pdst->laddr;
     
-    mmemcpy(&_mac_tx_buf.mac_frame.data[0], data, length);
+    MMemcpy(&_mac_tx_buf.mac_frame.data[0], data, length);
 
     return length;
 }
@@ -176,12 +185,12 @@ uint8_t plc_mac_rx_with_rssi(uint8_t *pdata, uint8_t *prssiv)
 
      _mac_rx_buf.indication = 0;
 	 
-    MMemcmp(pdata, _mac_rx_buf.mac_frame.data, _mac_rx_buf.lenght);
+    MMemcmp(pdata, _mac_rx_buf.mac_frame.data, _mac_rx_buf.length);
 
     if (prssiv)
         *prssiv = _mac_rx_buf.rssiv;
 
-    return _mac_rx_buf.lenght;
+    return _mac_rx_buf.length;
 }
 
 uint8_t plc_mac_rx(uint8_t *pdata)
@@ -201,25 +210,27 @@ uint8_t plc_mac_rx(uint8_t *pdata)
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-void plc_mac_init(mac_addr mac, uint8_t back, uint8_t slot)
+void plc_mac_init(uint8_t back, uint8_t slot)
 {
+	init_t16g1();
+    plc_init();
+
     _mac_csma.timeout = 0;
       
-    _mac_tx_buf.request = 0;
+    _mac_tx_buf.stat = tx_idle;
     _mac_tx_buf.confirm = 0;    //初始化
     _mac_tx_buf.listen = 0;  
-    _mac_tx_buf.timeout = 0;
-    _mac_tx_buf.count = 0;
+    //    _mac_tx_buf.timeout = 0;
+    //   _mac_tx_buf.count = 0;
     
     _mac_rx_buf.indication = 0;
 
     _mac_csma.back = back;
     _mac_csma.slot = slot;
-    
-    _mac_addr.laddr = mac.laddr;
+
     // _network_id = net;
     /* 每个设备的mac地址都不一样，所以可以用mac地址作为随机种子*/
-    srand(_mac_addr.laddr);
+    srand(self_mac.laddr);
 }
 
 

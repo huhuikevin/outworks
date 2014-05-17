@@ -139,37 +139,33 @@ int8u linklay_send_data(int8u *pdata, int8u len, linkaddr_t *plinkaddr)
 	return 0;
 }
 
-uint8_t linklay_send_route_data(mac_addr *pdst, uint8_t *pdata, uint8_t len)
+uint8_t linklay_send_route_data(mac_addr *pdst, uint8_t *pdata, uint8_t len, uint8_t mac)
 {
 	linkaddr_t addr;
 	addr.dest.laddr = pdst->laddr;
 	addr.needack = 0;
 	addr.protocol = PROTOCOL_ROUTER;
-
+	addr.mac = mac;
 	return linklay_send_data(pdata, len, &addr);
 }
 
 
-uint8_t linklay_send_app_data(mac_addr *pdst, uint8_t *pdata, uint8_t len)
+uint8_t linklay_send_app_data(mac_addr *pdst, uint8_t *pdata, uint8_t len, uint8_t needack)
 {
 	linkaddr_t addr;
+	route_t pdest;
 	addr.dest.laddr = pdst->laddr;
-	addr.needack = 0;
+	addr.needack = needack;
 	addr.protocol = PROTOCOL_NORMAL;
-
+	
+	pdest = route_found_by_dst(pdst);
+	if (pdest) {
+		linklay_send_failt(send_error_no_router);
+		return 0;
+	}
+	addr.mac = pdest->phy_type;
 	return linklay_send_data(pdata, len, &addr);
 }
-
-uint8_t linklay_send_app_data_withack(mac_addr *pdst, uint8_t *pdata, uint8_t len)
-{
-	linkaddr_t addr;
-	addr.dest.laddr = pdst->laddr;
-	addr.needack = 1;
-	addr.protocol = PROTOCOL_NORMAL;
-
-	return linklay_send_data(pdata, len, &addr);
-}
-
 
 send_stat_t linklay_get_tx_status(uint8_t mac)
 {
@@ -178,23 +174,23 @@ send_stat_t linklay_get_tx_status(uint8_t mac)
 
 void linklay_build_package(linkaddr_t *plinkaddr)
 {
-        linkhead_t pHead = &plink->send_frame.head;
-	 linklay_t *plink = &linklay[plinkaddr->mac];
+	linkhead_t pHead = &plink->send_frame.head;
+	linklay_t *plink = &linklay[plinkaddr->mac];
 	 
-        pHead->Version = 0;
-	 pHead->ack_pkg = 0;
-	 if (plinkaddr->protocol == PROTOCOL_ROUTER)
-	 	pHead->need_ack = 0;
-	 else
+    pHead->Version = 0;
+	pHead->ack_pkg = 0;
+	if (plinkaddr->protocol == PROTOCOL_ROUTER)
+		pHead->need_ack = 0;
+	else
 	 	pHead->need_ack = plinkaddr->needack;
-	 plink->send_seq ^= 1;
-	 pHead->seq = plink->send_seq;
-	 pHead->protocol = plinkaddr->protocol;
-	 pHead->rtdst_addr.laddr = plinkaddr->dest.laddr;
-        pHead->Version = VERSION;
-        pHead->protocol = PKG_TYPE_NORMAL;
-        //pHead->App_Len = linklay[i].send_bytes;
-        pHead->Seq = plink->send_seq;
+	plink->send_seq ^= 1;
+	pHead->seq = plink->send_seq;
+	pHead->protocol = plinkaddr->protocol;
+	pHead->rtdst_addr.laddr = plinkaddr->dest.laddr;
+    pHead->Version = VERSION;
+    pHead->protocol = PKG_TYPE_NORMAL;
+    //pHead->App_Len = linklay[i].send_bytes;
+    pHead->Seq = plink->send_seq;
         
 }
 
@@ -226,9 +222,9 @@ int8u __linklay_recv_data(int8u *pdata, int8u mac, uint8_t protol)
 /* 上层已经把数据填写到 linklay_send_buf 中了 */
 void linklay_send_process()
 {
-    int8u i;
+	int8u i, mac;
     route_t *pdest;
-
+	mac_addr *paddr;
     for (i = MacPlc; i < MacTypeEnd; i++) {
         linkhead_t *pHead = &linklay[i].send_frame.head;
         int8u pkglen = linklay[i].send_bytes + sizeof(linkhead_t);
@@ -240,23 +236,30 @@ void linklay_send_process()
         if (linklay_is_waitack(i)){
             if (linklay[i].send_timeout > _sys_tick)//not timeouted
 	         continue;
-	 }
-
-	 pdest = route_found_by_dst(&pHead->rtdst_addr);
-	 if (!pdest){
-	     linklay_send_failt(send_error_no_router);
-            continue;
-	 }
-        sended = linklay_tx_bytes(pdest->phy_type, &pdest->next, (uchar *)pHead, pkglen);
-        if (sended) {
-	     if (!pHead->need_ack)
-	         linklay_send_idle(i);
-	     else {
-	         linklay_send_waitack(i);
-	         linklay[i].send_timeout = _sys_tick + TX_WAITACK_TIMEOUT;
-	     }
-        }else
-            linklay_send_txing(i);
+		}
+		if (pHead->protocol == PROTOCOL_NORMAL) {
+			pdest = route_found_by_dst(&pHead->rtdst_addr);
+			if (!pdest){
+	    		linklay_send_failt(send_error_no_router);
+        		continue;
+			}
+			mac = pdest->phy_type;
+			paddr = &pdest->next;
+		}else if (pHead->protocol == PROTOCOL_ROUTER) {
+			paddr = &pHead->rtdst_addr;
+			mac = linklay[i].mac;
+		}
+			
+ 		sended = linklay_tx_bytes(mac, paddr, (uchar *)pHead, pkglen);
+    	if (sended) {
+			if (!pHead->need_ack)
+	         	linklay_send_idle(i);
+	    	else {
+	         	linklay_send_waitack(i);
+	         	linklay[i].send_timeout = _sys_tick + TX_WAITACK_TIMEOUT;
+	    	}
+    	}else
+    		linklay_send_txing(i);
     }
 #ifdef CONFIG_TYPE_AUTODEVICE
     linklay_forward_process();
