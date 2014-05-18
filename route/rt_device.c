@@ -3,16 +3,24 @@
 #include "type.h"
 #include "system.h"
 #include "tool.h"
-#include "linklay.h"
+#include "timer16n.h"
+#include "route.h"
+#include "linklay_v2.h"
 
-int16u active_tick; 
-#define DEVICE_TIMEOUT_R MS_TO_TICK(5*1000)
+#ifdef CONFIG_TYPE_AUTODEVICE
+
+uint16_t active_tick; 
+#define DEVICE_TIMEOUT_R 500 // 5s
 /*
 dst  passaddr     src    final dst
 
 */
-section32 route_t rt_table[CONFIG_ROUTE_TABLE_SIZE];
-mac_addr gateway_addr;
+
+uint8_t _addr_is_nexthop_to_gateway(mac_addr *paddr);
+void device_ack_gateway(route_frame_t *prt);
+void device_sendto_next_hop(route_frame_t *prt);
+void device_broadcast_selfaddr();
+void device_send_dfap();
 
 
 // process when recved the route data package
@@ -49,15 +57,16 @@ void device_route_process()
 	    }
        }
 	if (gateway_addr.laddr == 0){
-		if (IsTimeOut(active_tick+DEVICE_TIMEOUT_R)){
+		if ((active_tick+DEVICE_TIMEOUT_R) <= _sys_tick){
 			device_broadcast_selfaddr();
+			active_tick = _sys_tick;
 		}
 	}
 
 	route_process_timeout();
 }
 
-uchar _addr_is_nexthop_to_gateway(mac_addr *paddr)
+uint8_t _addr_is_nexthop_to_gateway(mac_addr *paddr)
 {
 	route_t *proute;
 	if (!gateway_addr.laddr)
@@ -65,7 +74,7 @@ uchar _addr_is_nexthop_to_gateway(mac_addr *paddr)
 	proute = route_found_by_dst(&gateway_addr);
 	if (proute == NULL)
 		return 0;
-	if (proute->next.laddr == paddr.laddr)
+	if (proute->next.laddr == paddr->laddr)
 		return 1;
 	return 0;
 }
@@ -96,14 +105,14 @@ void device_send_dfap()
 	if (proute == NULL){
 		return;//never reached here
 	}
-	linklay_send_route_data(&proute->next_addr, &rt_frame, sizeof(route_frame_t), MacPlc);
+	linklay_send_route_data(&proute->next, &rt_frame, sizeof(route_frame_t), MacPlc);
 }
 
 void device_sendto_next_hop(route_frame_t *prt)
 {
 	route_t *proute;
 	mac_addr dst;
-	uchar i,len;
+	uint8_t i,len;
 
 	prt->hop++;
 	prt->pass_addr.laddr = self_mac.laddr;
@@ -116,7 +125,7 @@ void device_sendto_next_hop(route_frame_t *prt)
 			if (proute){//如果有到网关的路由直接发给next
 				dst.laddr = proute->next.laddr;
 				prt->dst_addr.laddr = gateway_addr.laddr;
-				linklay_send_route_data(&dst, prt, sizeof(route_frame_t), MacPlc);
+				linklay_send_route_data(&dst, prt, sizeof(route_frame_t), proute->phy_type);
 			}
 		}
 		return;
@@ -125,7 +134,7 @@ void device_sendto_next_hop(route_frame_t *prt)
 	proute = route_found_by_dst(&prt->dst_addr);
 	if (proute){//如果有路由直接发给next
 		dst.laddr = proute->next.laddr;
-		linklay_send_route_data(&dst, prt, sizeof(route_frame_t));
+		linklay_send_route_data(&dst, prt, sizeof(route_frame_t), proute->phy_type);
 		return;
 	}else if (prt->route_type == ROUTETYPE_MCAST_DFP){
 		if (route_have_routes_to_device()){// 有到device的路由
@@ -158,9 +167,10 @@ void device_broadcast_selfaddr()
 
 void device_route_init()
 {
-	active_tick = Timetick();
+	active_tick = _sys_tick;
 	route_init();
 	device_broadcast_selfaddr();
 }
 
+#endif
 

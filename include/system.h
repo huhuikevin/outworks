@@ -25,7 +25,7 @@
 #define SYNC_WORD 0x7e
 #define FRAME_START 0xaa
 
-extern mac_addr self_mac;
+mac_addr self_mac;
 
 #define BROADCAST_ADDR 0xffffffff
 #define MULTICAST_ADDR 0x00000000

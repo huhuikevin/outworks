@@ -2,21 +2,26 @@
 #include <hic.h>
 #include "type.h"
 #include "tool.h"
-
+#include "timer16n.h"
+#include "route.h"
 
 /*
 dst  passaddr     src    final dst
 
 */
+section32 route_t rt_table[CONFIG_ROUTE_TABLE_SIZE];
+
+
+mac_addr gateway_addr;
 
 void route_init()
 {
-	MMemSet((void *)&rt_table[0],0,sizeof(route_t)*CONFIG_ROUTE_TABLE_SIZE)
+	MMemSet((void *)&rt_table[0],0,sizeof(route_t)*CONFIG_ROUTE_TABLE_SIZE);
 }
 
 route_t *route_get_rt_item()
 {
-	uchar i;
+	uint8_t i;
 
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (!rt_table[i].valide){
@@ -28,13 +33,13 @@ route_t *route_get_rt_item()
 // if found , update the time tick, and return the item
 route_t *route_found_and_update_ticks(mac_addr *pdst, mac_addr *pnext)
 {
-	uchar i;
+	uint8_t i;
 	
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (rt_table[i].valide){
 			if ((pdst->laddr == rt_table[i].dst.laddr) && 
 				(pnext->laddr == rt_table[i].next.laddr)){
-				rt_table[i].ticks = Timetick();
+				rt_table[i].ticks = _sys_tick;
 				return &rt_table[i];
 			}
 		}
@@ -45,7 +50,7 @@ route_t *route_found_and_update_ticks(mac_addr *pdst, mac_addr *pnext)
 // if found , update the time tick, and return the item
 route_t *route_found_by_dst(mac_addr *pdst)
 {
-	uchar i;
+	uint8_t i;
 	
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (rt_table[i].valide){
@@ -69,8 +74,8 @@ mac_addr *route_found_next_by_dst(mac_addr *pdst)
 
 route_t *route_found_useless()
 {
-	uchar i, founded;
-	int16u min=0xffff;
+	uint8_t i, founded;
+	uint16_t min=0xffff;
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (rt_table[i].valide){
 			if (rt_table[i].ticks < min) {
@@ -85,9 +90,9 @@ route_t *route_found_useless()
 		return NULL;
 }
 
-uchar route_have_routes_to_device(void)
+uint8_t route_have_routes_to_device(void)
 {
-	uchar i;
+	uint8_t i;
 	
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (rt_table[i].valide){
@@ -142,7 +147,7 @@ void route_add(route_frame_t *prt)
 		proute->phy_type = prt->mac_type;
 		proute->rssiv = prt->rssiv;
 		proute->seq = 0;
-		proute->ticks = Timetick();
+		proute->ticks = _sys_tick;
 		proute->valide = 1;
 		if (prt->route_type == ROUTETYPE_BCAST_GWADDR)
 			proute->route_type = ROUTE_TYPE_DIRECT_GATEWAY;
@@ -169,7 +174,7 @@ void route_update(route_frame_t *prt)
 			proute->next.laddr = prt->pass_addr.laddr;
 			proute->hop = prt->hop;
 			proute->rssiv = prt->rssiv;
-			proute->ticks = Timetick();
+			proute->ticks = _sys_tick;
 		}
 	}else{
 		//if (prt->mac_type == )
@@ -180,11 +185,11 @@ void route_update(route_frame_t *prt)
 
 route_t *route_process_timeout()
 {
-	uchar i;
+	uint8_t i;
 	
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (rt_table[i].valide){
-			if (IsTimeOut(rt_table[i].ticks + ROUTE_MAX_LIFTCYCLE))
+			if ((rt_table[i].ticks + ROUTE_MAX_LIFTCYCLE) <= _sys_tick)
 			{
 				rt_table[i].valide = 0;
 				return &rt_table[i];

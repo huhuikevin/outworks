@@ -3,7 +3,7 @@
 #include "type.h"
 #include "system.h"
 #include "timer16n.h"
-//#include "linklay.h"
+#include "linklay_v2.h"
 
 mac_addr self_mac;
 
@@ -11,6 +11,12 @@ void sys_app_process();
 void board_init();
 void plc_recv_proc();
 void plc_send_proc();
+#ifdef CONFIG_TYPE_AUTODEVICE
+void device_route_init();
+#endif
+#ifdef CONFIG_TYPE_AUTOGATEWAY
+void gateway_route_init();
+#endif
 
 void RAM_Clr(void) //ramÈ«Çå
 {
@@ -37,7 +43,14 @@ void main(void)
     flash_read(CONFIG_MACADDR_FLASHADDR, &self_mac, sizeof(self_mac));
 #endif
     //timer8N();
-    //linklay_init();
+    linklay_init();
+#ifdef CONFIG_TYPE_AUTODEVICE
+	device_route_init();
+#endif
+#ifdef CONFIG_TYPE_AUTOGATEWAY
+	gateway_route_init();
+#endif
+
     do {
         watchdog();
         enable_irq();

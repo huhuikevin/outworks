@@ -3,26 +3,40 @@
 #include "type.h"
 #include "system.h"
 #include "tool.h"
-#include "plc.h"
-
+#include "timer16n.h"
+#include "route.h"
+#include "linklay_v2.h"
+#ifdef CONFIG_TYPE_AUTOGATEWAY
 typedef struct {
 	mac_addr addr;
-	uchar stat;
-	int16u ticks;
+	uint8_t stat;
+	uint16_t ticks;
 }device_t;
 
-#define WAITING_FDAP_TIMEOUT MS_TO_TICK(2*1000)
+#define WAITING_FDAP_TIMEOUT (2*100)//2s
 
 device_t device_tbl[CONFIG_GATEWAY_MNG_DEVICES];
-int16u find_device_tick;
-#define FIND_DEVICE_INTVAL MS_TO_TICK(500)
+uint16_t find_device_tick;
+#define FIND_DEVICE_INTVAL (50)//500ms
 
-#define INQ_DEVICE_INTVAL MS_TO_TICK(500)
+#define INQ_DEVICE_INTVAL (50) //500ms
+
+void gateway_mcast_fdp(mac_addr *paddr);
+void gateway_process_device(route_frame_t *prt);
+void gateway_found_device();
+void gateway_route_timeout();
+void gateway_inq_devices();
+void gateway_inq_addr(mac_addr *paddr);
+void gateway_deactive_device(mac_addr *paddr);
+void gateway_active_device(mac_addr *paddr);
+void gateway_broadcast_selfaddr();
+
+
 
 void gateway_route_process()
 {
 	route_frame_t rt_frame;
-	uchar len;
+	uint8_t len;
 	uint8_t rssiv;
 
 	len = linklay_recv_data_with_rssi(&rt_frame, MacPlc, &rssiv);
@@ -38,13 +52,13 @@ void gateway_route_process()
 
 void gateway_inq_devices()
 {
-	uchar i;
+	uint8_t i;
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){//if is waiting_fdap timeout(in the gaven time, don't recv fdap pkg)
 		if (device_tbl[i].addr.laddr) {
 			if (device_tbl[i].stat == rt_active) {
-				if (IsTimeOut(device_tbl[i].ticks+INQ_DEVICE_INTVAL)) {
+				if ((device_tbl[i].ticks+INQ_DEVICE_INTVAL) <= _sys_tick) {
 					gateway_inq_addr(&device_tbl[i].addr);
-					device_tbl[i].ticks = Timetick();
+					device_tbl[i].ticks = _sys_tick;
 					device_tbl[i].stat = rt_inq;
 				}
 				//device_tbl[i].stat = rt_waiting_fdap;
@@ -83,7 +97,7 @@ void gateway_route_timeout()
 
 void gateway_deactive_device(mac_addr *paddr)
 {
-	uchar i;
+	uint8_t i;
 
 	for (i = 0; i < CONFIG_GATEWAY_MNG_DEVICES; i++ ){
 		if (device_tbl[i].addr.laddr && device_tbl[i].stat == rt_active){
@@ -96,13 +110,13 @@ void gateway_deactive_device(mac_addr *paddr)
 }
 void gateway_active_device(mac_addr *paddr)
 {
-	uchar i;
+	uint8_t i;
 
 	for (i = 0; i < CONFIG_GATEWAY_MNG_DEVICES; i++ ){
 		if (device_tbl[i].addr.laddr && device_tbl[i].stat != rt_active){
 			if (device_tbl[i].addr.laddr == paddr->laddr) {
 				device_tbl[i].stat = rt_active;
-				device_tbl[i].ticks = Timetick();
+				device_tbl[i].ticks = _sys_tick;
 				break;
 			}
 		}
@@ -132,7 +146,7 @@ void gateway_process_device(route_frame_t *prt)
 */
 void gateway_add_device(mac_addr *paddr)
 {
-	uchar i;
+	uint8_t i;
 
 	for (i = 0; i < CONFIG_GATEWAY_MNG_DEVICES; i++ ){
 		if (device_tbl[i].stat == rt_idle){
@@ -160,18 +174,19 @@ void gateway_broadcast_selfaddr()
 	linklay_send_route_data(&dst_addr, &rt_frame, sizeof(rt_frame), MacPlc);
 }
 
-uchar _gateway_found_device1()
+uint8_t _gateway_found_device1()
 {
-	uchar i;
-	uchar has_device = 0;
+	uint8_t i;
+	uint8_t has_device = 0;
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
 		if (device_tbl[i].addr.laddr) {
 			if (device_tbl[i].stat == rt_has_device) {
 				has_device = 1;
-				if (IsTimeOut(FIND_DEVICE_INTVAL+find_device_tick)) {
-					gateway_mcast_fdp(&rt_table[i]);
+				if ((FIND_DEVICE_INTVAL+find_device_tick) <= _sys_tick) {
+					gateway_mcast_fdp(&device_tbl[i].addr);
 					device_tbl[i].stat = rt_waiting_fdap;
-					device_tbl[i].ticks = Timetick();
+					device_tbl[i].ticks = _sys_tick;
+					find_device_tick = _sys_tick;
 				}
 				break;
 			}
@@ -182,13 +197,13 @@ uchar _gateway_found_device1()
 
 void _gateway_found_device2()
 {
-	uchar i;
+	uint8_t i;
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){//if is waiting_fdap timeout(in the gaven time, don't recv fdap pkg)
 		if (device_tbl[i].addr.laddr) {
 			if (device_tbl[i].stat == rt_waiting_fdap) {
-				if (IsTimeOut(device_tbl[i].ticks+WAITING_FDAP_TIMEOUT)) {
-					gateway_mcast_fdp(&rt_table[i]);
-					device_tbl[i].ticks = Timetick();
+				if ((device_tbl[i].ticks+WAITING_FDAP_TIMEOUT) <= _sys_tick) {
+					gateway_mcast_fdp(&device_tbl[i].addr);
+					device_tbl[i].ticks = _sys_tick;
 				}
 				//device_tbl[i].stat = rt_waiting_fdap;
 				return;
@@ -211,7 +226,7 @@ void gateway_found_device()
 void gateway_send_fdp(mac_addr *ppassaddr, mac_addr *paddr)
 {
 	route_frame_t rt_frame;
-	uchar i,len;
+	uint8_t i,len;
 
 	rt_frame.dst_addr.laddr = paddr->laddr;
 	rt_frame.mac_type = MacPlc;
@@ -234,7 +249,8 @@ void gateway_mcast_fdp(mac_addr *paddr)
 void gateway_route_init()
 {
 	route_init();
-	MMemSet(&device_tbl[0],0,sizeof(device_t)*CONFIG_GATEWAY_MNG_DEVICES)
-	find_device_tick=Timetick();
+	MMemSet(&device_tbl[0],0,sizeof(device_t)*CONFIG_GATEWAY_MNG_DEVICES);
+	find_device_tick=_sys_tick;
 	gateway_broadcast_selfaddr();
 }
+#endif
