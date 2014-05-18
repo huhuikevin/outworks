@@ -1,11 +1,11 @@
 #include <hic.h>
-#include "soc_25xx.h"
 #include "type.h"
-#include "linklay.h"
-#include "tool.h"
-#include "timer8n.h"
-#include "debug.h"
 #include "system.h"
+#include "linklay_v2.h"
+#include "tool.h"
+#include "timer16n.h"
+#include "debug.h"
+
 
 #define    OpenRLed PB5=1
 #define    CloseRLed PB5=0

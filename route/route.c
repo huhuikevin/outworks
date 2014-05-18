@@ -9,7 +9,7 @@
 dst  passaddr     src    final dst
 
 */
-section32 route_t rt_table[CONFIG_ROUTE_TABLE_SIZE];
+section38 route_t rt_table[CONFIG_ROUTE_TABLE_SIZE]@0x1300;
 
 
 mac_addr gateway_addr;
