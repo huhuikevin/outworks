@@ -344,7 +344,7 @@ void plc_tx1_pn15(void)
             TX_BIT0();  
             DELAY2NOP();  //if/esle时间相等
         }
-        pn15 <<= 1;
+        pn15 <<= 1; // 5nop
  
         //码片保证50us延时
         DELAY100NOP(); 
@@ -515,19 +515,19 @@ void plc_send_proc(void)
 **************************************************************************/
 void plc_tx_nextbit(void) 
 {
-    _send_buf.bitdata = _send_buf.data[_send_buf.byteoff] & 0x80; 
-    _send_buf.data[_send_buf.byteoff] <<= 1;
-    _send_buf.bitoff++;
+    _send_buf.bitdata = _send_buf.data[_send_buf.byteoff] & 0x80; // 22nop
+    _send_buf.data[_send_buf.byteoff] <<= 1; // 26 nop
+    _send_buf.bitoff++; // 8nop
     
-    if (_send_buf.bitoff > 7) {         
-        _send_buf.bitoff = 0;    
-        _send_buf.byteoff++;
+    if (_send_buf.bitoff > 7) {   // 3nop // 2 nop      
+        _send_buf.bitoff = 0;    // 2nop
+        _send_buf.byteoff++; // 7nop
     }
     else {
         DELAY10NOP();
     }
          
-    if (_send_buf.byteoff == _send_buf.length) {
+    if (_send_buf.byteoff == _send_buf.length) { // 3nop 2nop
         _send_buf.valid = 0;        //清空发射缓冲区
         _send_buf.bitoff = 0; 
         _send_buf.byteoff = 0; 
@@ -596,7 +596,7 @@ void plc_rx_1bit(void)
 {
     uint8_t i;
     
-    //延时用于比特采样同步，约870NOP
+    //延时用于比特采样同步，约1320NOP
     DELAY100NOP();
     DELAY100NOP();
     DELAY100NOP();
@@ -606,20 +606,25 @@ void plc_rx_1bit(void)
     DELAY100NOP();
     DELAY100NOP();
     DELAY100NOP();
-    DELAY10NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+    DELAY100NOP();
+	DELAY100NOP();
+    DELAY20NOP();
     
-    
+     //do {
      for (i = 0; i < 62; i++) { 
-        if (PLC_FSK_RXD) {                  //sample 0
+        if (PLC_FSK_RXD) {   // 3nop               //sample 0
             DELAY1NOP();    //if/else 对齐
             
-            _chip_flag.chipnum[i]++;
+            _chip_flag.chipnum[i] = 1;// 16nop
+			DELAY7NOP();
         }
         else {
-            DELAY20NOP();
-            DELAY3NOP();
-            
-            DELAY2NOP();    //if/else 对齐
+
+			_chip_flag.chipnum[i] = 0;
+           
+            DELAY9NOP();    //if/else 对齐
         }
         
         //采样间隔62NOP
@@ -629,7 +634,7 @@ void plc_rx_1bit(void)
         if (PLC_FSK_RXD) {
             DELAY1NOP();    //if/else 对齐
            
-            _chip_flag.chipnum[i]++;
+            _chip_flag.chipnum[i]++;// 23
         }
         else {
             DELAY20NOP();
@@ -804,9 +809,9 @@ void plc_bit_recv(void)
         }
     }
     
-    for (i = 0; i < 62; i++) {     //清空缓冲区
-        _chip_flag.chipnum[i] = 0;
-    } 
+    //for (i = 0; i < 62; i++) {     //清空缓冲区
+        //_chip_flag.chipnum[i] = 0;
+    //} 
 }
 
 /**************************************************************************
