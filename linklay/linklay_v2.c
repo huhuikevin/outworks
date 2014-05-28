@@ -125,6 +125,8 @@ void linklay_init()
 	linklay[0].mac_type = MacPlc;
 	MMemSet(&linklay[1], 0, sizeof(linklay_t));
 	linklay[1].mac_type = MacHw2000;
+    
+   self_mac.laddr = 0xffffffff;
 }
 
 uint8_t linklay_send_data(int8u *pdata, int8u len, linkaddr_t *plinkaddr)
@@ -163,7 +165,7 @@ uint8_t linklay_send_app_data(mac_addr *pdst, uint8_t *pdata, uint8_t len, uint8
 	addr.protocol = PROTOCOL_NORMAL;
 	
 	pdest = route_found_by_dst(pdst);
-	if (pdest) {
+	if (!pdest) {
 		linklay_send_failt(pdest->phy_type, send_error_no_router);
 		return 0;
 	}
@@ -214,7 +216,7 @@ uint8_t linklay_recv_data_with_rssi(uint8_t *pdata, uint8_t mac, uint8_t *prssi)
 uint8_t __linklay_recv_data(uint8_t *pdata, uint8_t mac, uint8_t protol)
 {
     uint8_t len = linklay[mac].recv_bytes;
-    if (linklay_has_recved_data(mac) && (linklay[mac].pkg_protocol = protol)) {
+    if (linklay_has_recved_data(mac) && (linklay[mac].pkg_protocol == protol)) {
         MMemcpy (pdata, &linklay[mac].recv_frame.link_data[0], len);
         linklay_recv_idle(mac);
 	 return len; 
@@ -266,10 +268,12 @@ void linklay_send_process()
     	}else
     		linklay_send_txing(i);
     }
+#ifndef CONFIG_NO_ROUTE
 #ifdef CONFIG_TYPE_AUTODEVICE
     linklay_forward_process();
     linklay_ackframe_process();
-#endif	
+#endif
+#endif
 }
 
 
@@ -378,9 +382,10 @@ void linklay_process_normal(linklay_t *plink)
 	
 	linklay_data_recved(plink->mac_type);
 
-#ifdef CONFIG_TYPE_AUTODEVICE	
 	plink->pkg_protocol = PROTOCOL_NORMAL;
-
+	if (!pHead->need_ack)
+		return;
+#ifdef CONFIG_TYPE_AUTODEVICE	
 	MMemcpy(&plink->ack_frame.head, pHead, sizeof(linkhead_t));
 
 	plink->ack_frame.head.ack_pkg = 1;

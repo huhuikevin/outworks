@@ -50,6 +50,7 @@ route_t *route_found_and_update_ticks(mac_addr *pdst, mac_addr *pnext)
 // if found , update the time tick, and return the item
 route_t *route_found_by_dst(mac_addr *pdst)
 {
+#ifndef CONFIG_NO_ROUTE
 	uint8_t i;
 	
 	for (i = 0; i < CONFIG_ROUTE_TABLE_SIZE; i++ ){
@@ -60,6 +61,11 @@ route_t *route_found_by_dst(mac_addr *pdst)
 		}
 	}
 	return NULL;
+#else
+	rt_table[0].phy_type = CONFIG_DEFAULT_MAC;
+	rt_table[0].next.laddr = pdst->laddr;
+   return &rt_table[0];
+#endif
 }
 
 

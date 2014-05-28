@@ -2,6 +2,9 @@
 #ifndef __CONFIG__H_
 #define __CONFIG__H_
 
+#define CONFIG_NO_ROUTE 
+#define CONFIG_DEFAULT_MAC 0
+
 #define CONFIG_TYPE_AUTODEVICE
 //#define CONFIG_TYPE_AUTOGATEWAY
 #define CONFIG_MAX_HOP 8
@@ -26,14 +29,14 @@
 #define CONFIG_UART 1
 
 #ifdef CONFIG_UART
-//#define CONFIG_LINKLAY_UART 0 // 定义哪个uart口用作link层通信用
+#define CONFIG_LINKLAY_UART 1 // 定义哪个uart口用作link层通信用
 
 //#define CONFIG_CONSOLE 1 // 系统console口使能
 
 #ifdef CONFIG_CONSOLE
-#define CONFIG_CONSOLE_UART 1 // 系统console print用哪个uart口
+#define CONFIG_CONSOLE_UART 2 // 系统console print用哪个uart口
 #endif
-#endif
+#endif //CONFIG_UART
 
 #ifdef SPI_GPIO
 #define CONFIG_SPI_CSN  PC1

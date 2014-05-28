@@ -5,7 +5,7 @@
 //#include "soc_25xx.h"
 #include "plc_mac.h"
 //#include "timer8n.h"
-//#include "uart.h"
+#include "uart.h"
 
 void iniSCI(void)
 {

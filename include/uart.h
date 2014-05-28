@@ -5,34 +5,30 @@ uart.h
 #define __UART__H_
 
 
-void UartInit(uchar uartIdx, int16u baudrate);
+void UartInit(uint8_t uartIdx, uint16_t baudrate);
 void uart_driver_process(void);
 
 #ifdef CONFIG_LINKLAY_UART
-uchar uart_rx_bytes(uchar *pdata);
-uchar uart_tx_bytes(uchar *pdata, uchar len);
+uint8_t uart_rx_bytes(uint8_t *pdata);
+uint8_t uart_tx_bytes(uint8_t *pdata, uint8_t len);
 #endif
 
 #ifdef CONFIG_CONSOLE
-uchar console_uart_rx_bytes(uchar *pdata);
-uchar console_uart_tx_bytes(uchar *pdata, uchar len);
+uint8_t console_uart_rx_bytes(uint8_t *pdata);
+uint8_t console_uart_tx_bytes(uint8_t *pdata, uint8_t len);
 #endif
-void serial_data_init(uchar idx);
-void SetBaud(uchar uartIdx, int16u  baud);
-uchar Uart0_Tx(uchar *pdata, uchar len);
-uchar Uart1_Tx(uchar *pdata, uchar len);
-uchar Uart2_Tx(uchar *pdata, uchar len);
+void serial_data_init(uint8_t idx);
+void SetBaud(uint8_t uartIdx, uint16_t  baud);
 
-uchar Uart0_Rx();
-uchar Uart1_Rx();
-uchar Uart2_Rx();
-uchar Uart_Rx();
+uint8_t Uart0_Tx(uint8_t *pdata, uint8_t len);
+uint8_t Uart1_Tx(uint8_t *pdata, uint8_t len);
+uint8_t Uart2_Tx(uint8_t *pdata, uint8_t len);
 
-
-
-
-
-
+uint8_t Uart0_Rx();
+uint8_t Uart1_Rx();
+uint8_t Uart2_Rx();
+uint8_t Uart_Rx();
+uint8_t uart_rx_byte();
 
 
 #endif /* __UART__H_ */

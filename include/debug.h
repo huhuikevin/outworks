@@ -4,6 +4,9 @@
 
 #define DEBUGER_SINGAL 1
 
+#define PLC_TEST 
+//#define UART_TEST
+
 //#define SENDER 1
 
 

@@ -45,5 +45,6 @@ uint8_t linklay_send_data(int8u *pdata, int8u len, linkaddr_t *plinkaddr);
 uint8_t linklay_recv_data(uint8_t *pdata, uint8_t mac);
 uint8_t linklay_recv_data_with_rssi(uint8_t *pdata, uint8_t mac, uint8_t *prssi);
 uint8_t linklay_send_route_data(mac_addr *pdst, uint8_t *pdata, uint8_t len, uint8_t mac);
+uint8_t linklay_send_app_data(mac_addr *pdst, uint8_t *pdata, uint8_t len, uint8_t needack);
 #endif/* __LINKLAY__H_ */
 

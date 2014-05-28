@@ -1,5 +1,6 @@
 //系统的一些函数
 #include <hic.h>
+#include "config.h"
 #include "type.h"
 #include "system.h"
 #include "timer16n.h"
@@ -44,11 +45,15 @@ void main(void)
 #endif
     //timer8N();
     linklay_init();
+
+#ifndef CONFIG_NO_ROUTE
 #ifdef CONFIG_TYPE_AUTODEVICE
 	device_route_init();
 #endif
+
 #ifdef CONFIG_TYPE_AUTOGATEWAY
 	gateway_route_init();
+#endif
 #endif
 
     do {

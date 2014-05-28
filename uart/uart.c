@@ -5,41 +5,42 @@ Description: Define all the function which related to the serial communicaitons.
 *******************************/
 #include "P111.h"
 #include "type.h"
+#include "config.h"
 #include "system.h"
 #include "uart.h"
-#include "timer8n.h"
+#include "timer16n.h"
 #include "tool.h"
-#include "config.h"
+
 
 #define UART_BUFFER_LENGTH 	MSG_MAX_LEN
 
 typedef struct
 {
-	uchar Recv_start:1;					//串口正在接收标识
-	uchar Recv_finish:1;	                    //串口接收完成
-    uchar inited;                                     //串口接收完成标志
-	uchar Recv_Len;					//串口接收长度	
-	uchar Recv_Buf[UART_BUFFER_LENGTH];		//串口接收buffer
+	uint8_t Recv_start:1;					//串口正在接收标识
+	uint8_t Recv_finish:1;	                    //串口接收完成
+    uint8_t inited;                                     //串口接收完成标志
+	uint8_t Recv_Len;					//串口接收长度	
+	uint8_t Recv_Buf[UART_BUFFER_LENGTH];		//串口接收buffer
 }UARTRECV_BUFFER;
 
 
 
 typedef struct {
-	uchar RxB;
-	uchar RxR8:1;
-	uchar FERR:1;
-	uchar OERR:1;
-	uchar RRES:3;
-	uchar RxM:1;
-	uchar RxEN:1;
-	uchar TxB;
-	uchar TxR8:1;
-	uchar TRMT:1;
-	uchar TRES:3;
-	uchar BRGH:1;
-	uchar TxM:1;
-	uchar TxEN:1;
-	uchar Buad;
+	uint8_t RxB;
+	uint8_t RxR8:1;
+	uint8_t FERR:1;
+	uint8_t OERR:1;
+	uint8_t RRES:3;
+	uint8_t RxM:1;
+	uint8_t RxEN:1;
+	uint8_t TxB;
+	uint8_t TxR8:1;
+	uint8_t TRMT:1;
+	uint8_t TRES:3;
+	uint8_t BRGH:1;
+	uint8_t TxM:1;
+	uint8_t TxEN:1;
+	uint8_t Buad;
 }uart_register;
 
 
@@ -50,14 +51,14 @@ do{\
 	while(!uart[i].TRMT);\
 }while(0);
 
-#define UART_TIMEOUT 1//MS
+#define UART_TIMEOUT 1//10MS
 
 section64 volatile uart_register uart[3]@0xFFE0;
 //uart_register uart[3];
 section10 UARTRECV_BUFFER  UartRecv[3]@0X500;
 
 
-uchar Calc_baud(int16u baud)
+uint8_t Calc_baud(int16u baud)
 {
 	switch(baud)
 	{
@@ -75,23 +76,23 @@ uchar Calc_baud(int16u baud)
 			return 54;
 	}
 }
-void UartInit(uchar uartIdx, int16u baudrate)						//Rcv function of Uart reset
+void UartInit(uint8_t uartIdx, uint16_t baudrate)						//Rcv function of Uart reset
 {
+  
 	uart[uartIdx].TxM = 0;// 8bit data tx
-	uart[uartIdx].RxM= 0;// 8bit data rx
-	uart[uartIdx].RxEN= 1;
-	uart[uartIdx].TxEN = 1;
+	uart[uartIdx].RxM = 0;// 8bit data rx
+
 	SetBaud(uartIdx, baudrate);
- 
+    uart[uartIdx].RxEN= 1; 
 	serial_data_init(uartIdx);
 	UartRecv[uartIdx].inited = 1;
 }
 
 
 #ifdef CONFIG_LINKLAY_UART
-uchar uart_rx_bytes(uchar *pdata)
+uint8_t uart_rx_bytes(uint8_t *pdata)
 {
-	uchar rlen = 0;
+	uint8_t rlen = 0;
 	if (UartRecv[CONFIG_LINKLAY_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_LINKLAY_UART].Recv_Len-1;
@@ -101,7 +102,7 @@ uchar uart_rx_bytes(uchar *pdata)
 	return rlen;
 }
 
-uchar uart_tx_bytes(uchar *pdata, uchar len)
+uint8_t uart_tx_bytes(uint8_t *pdata, uint8_t len)
 {
 #if CONFIG_LINKLAY_UART==0
 	return Uart0_Tx(pdata, len);
@@ -119,9 +120,9 @@ uchar uart_tx_bytes(uchar *pdata, uchar len)
 
 
 #ifdef CONFIG_CONSOLE
-uchar console_uart_rx_bytes(uchar *pdata)
+uint8_t console_uart_rx_bytes(uint8_t *pdata)
 {
-	uchar rlen = 0;
+	uint8_t rlen = 0;
 	if (UartRecv[CONFIG_CONSOLE_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_CONSOLE_UART].Recv_Len-1;
@@ -131,7 +132,7 @@ uchar console_uart_rx_bytes(uchar *pdata)
 	return rlen;
 }
 
-uchar console_uart_tx_bytes(uchar *pdata, uchar len)
+uint8_t console_uart_tx_bytes(uint8_t *pdata, uint8_t len)
 {
 #if CONFIG_CONSOLE_UART==0
 	return Uart0_Tx(pdata, len);
@@ -154,9 +155,9 @@ void uart_driver_process(void)
 }
 
 
-uchar Uart0_Tx(uchar *pdata, uchar len)
+uint8_t Uart0_Tx(uint8_t *pdata, uint8_t len)
 {
-	uchar send = 0;
+	uint8_t send = 0;
 	UART_CHAR_SEND(0, 0xaa);
 	UART_CHAR_SEND(0, len+2);
 
@@ -168,9 +169,10 @@ uchar Uart0_Tx(uchar *pdata, uchar len)
 
 }
 
-uchar Uart1_Tx(uchar *pdata, uchar len)
+uint8_t Uart1_Tx(uint8_t *pdata, uint8_t len)
 {
-	uchar send = 0;
+
+	uint8_t send = 0;
 	UART_CHAR_SEND(1, 0xaa);
 	UART_CHAR_SEND(1, len+2);
 
@@ -182,9 +184,9 @@ uchar Uart1_Tx(uchar *pdata, uchar len)
 
 }
 
-uchar Uart2_Tx(uchar *pdata, uchar len)
+uint8_t Uart2_Tx(uint8_t *pdata, uint8_t len)
 {
-	uchar send = 0;
+	uint8_t send = 0;
 	UART_CHAR_SEND(2, 0xaa);
 	UART_CHAR_SEND(2, len+2);
 
@@ -196,7 +198,7 @@ uchar Uart2_Tx(uchar *pdata, uchar len)
 
 }
 
-uchar Uart_Tx(uchar uartIdx, uchar *pdata, uchar len)
+uint8_t Uart_Tx(uint8_t uartIdx, uint8_t *pdata, uint8_t len)
 {
 	if (uartIdx == 0)
 		return Uart0_Tx(pdata,len);
@@ -207,7 +209,7 @@ uchar Uart_Tx(uchar uartIdx, uchar *pdata, uchar len)
 }
 
 
-uchar Uart_Rx()
+uint8_t Uart_Rx()
 {
 	if (UartRecv[0].inited)
 		Uart0_Rx();
@@ -218,9 +220,9 @@ uchar Uart_Rx()
 }
 
 
-uchar Uart0_Rx()
+uint8_t Uart0_Rx()
 {
-	uchar tmpr,rlen;
+	uint8_t tmpr,rlen;
 	int16u curt;
 	
 	if (RX1IF == 0) {
@@ -245,9 +247,9 @@ uchar Uart0_Rx()
 		if (rlen >= UartRecv[0].Recv_Buf[0]){//Recv_Buf[0] is data len
 			break;
 		}
-		curt = Timetick();
+		curt = _sys_tick;
 		while(RX1IF == 0){
-			if (IsTimeOut(curt+UART_TIMEOUT)){
+			if ((curt+UART_TIMEOUT) <= _sys_tick){
 				return 0;
 			}
 		}
@@ -256,19 +258,20 @@ uchar Uart0_Rx()
 	UartRecv[0].Recv_finish = 1;
 }
 
-uchar Uart1_Rx()
+
+uint8_t Uart1_Rx()
 {
-	uchar tmpr,rlen;
+	uint8_t tmpr,rlen;
 	int16u curt;
 	
-	if (RX1IF == 0) {
+	if (RX2IF == 0) {
 		return 0;
 	}
 	UartRecv[1].Recv_start = 0;
 	UartRecv[1].Recv_finish = 0;
 	rlen = 0;
 	do {
-		RX1IF = 0;
+		RX2IF = 0;
 		tmpr = uart[1].RxB;
 		if (tmpr == 0xaa)
 		{
@@ -283,30 +286,31 @@ uchar Uart1_Rx()
 		if (rlen >= UartRecv[1].Recv_Buf[0]){//Recv_Buf[0] is data len
 			break;
 		}
-		curt = Timetick();
-		while(RX1IF == 0){
-			if (IsTimeOut(curt+UART_TIMEOUT)){
+		curt = _sys_tick;
+		while(RX2IF == 0){
+			if ((curt+UART_TIMEOUT) <= _sys_tick){
 				return 0;
 			}
 		}
+
 	}while(1);
 	UartRecv[1].Recv_Len = rlen;
 	UartRecv[1].Recv_finish = 1;
 }
 
-uchar Uart2_Rx()
+uint8_t Uart2_Rx()
 {
-	uchar tmpr,rlen;
+	uint8_t tmpr,rlen;
 	int16u curt;
 	
-	if (RX1IF == 0) {
+	if (RX3IF == 0) {
 		return 0;
 	}
 	UartRecv[2].Recv_start = 0;
 	UartRecv[2].Recv_finish = 0;
 	rlen = 0;
 	do {
-		RX1IF = 0;
+		RX3IF = 0;
 		tmpr = uart[2].RxB;
 		if (tmpr == 0xaa)
 		{
@@ -321,26 +325,50 @@ uchar Uart2_Rx()
 		if (rlen >= UartRecv[2].Recv_Buf[0]){//Recv_Buf[0] is data len
 			break;
 		}
-		curt = Timetick();
-		while(RX1IF == 0){
-			if (IsTimeOut(curt+UART_TIMEOUT)){
+		curt = _sys_tick;
+		while(RX3IF == 0){
+			if ((curt+UART_TIMEOUT) <= _sys_tick){
 				return 0;
 			}
 		}
+
 	}while(1);
 	UartRecv[2].Recv_Len = rlen;
 	UartRecv[2].Recv_finish = 1;
 }
 
-void SetBaud(uchar uartIdx, int16u  baud)
+void SetBaud(uint8_t uartIdx, uint16_t  baud)
 {
-	uchar baudreg = Calc_baud(baud);
+    uint8_t baudreg = Calc_baud(baud);
 	uart[uartIdx].Buad = baudreg;
-	uart[uartIdx].BRGH = 0;//low bitrate mode
+	uart[uartIdx].BRGH = 0;//low bitrate mode	
 }
 
-void serial_data_init(uchar idx)
+void serial_data_init(uint8_t idx)
 {
     MMemSet((int8u *)&UartRecv[idx],0,sizeof(UARTRECV_BUFFER));
-   
+}
+
+
+uint8_t uart_rx_byte()
+{
+    char tmpr;
+#if CONFIG_LINKLAY_UART==0    
+    while(RX1IF == 0);
+    RX1IF = 0;
+    tmpr = uart[0].RxB;
+#endif
+
+#if CONFIG_LINKLAY_UART==1    
+    while(RX2IF == 0);
+    RX2IF = 0;
+    tmpr = uart[1].RxB;
+#endif
+
+#if CONFIG_LINKLAY_UART==2    
+    while(RX3IF == 0);
+    RX3IF = 0;
+    tmpr = uart[2].RxB;
+#endif    
+    return tmpr;
 }
