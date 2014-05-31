@@ -28,34 +28,31 @@ void send_process()
 	mac_addr dst;
 	uint8_t needack = 0;
 
-    app_data[0] = 0xaa;
-    app_data[1] = 0x55;
-
-    app_data[2] = 0xaa;
-    app_data[3] = 0x55;
-
-    app_data[4] = 0xaa;
-    app_data[5] = 0x55;
-
-    app_data[6] = 0xaa;
-    app_data[7] = 0x55;
+	for (len = 0; len < 16; len++)
+		app_data[len] = len;
 
     dst.laddr = 0xffffffff;
-    len = linklay_send_app_data(&dst, app_data, 8, needack);
+    len = linklay_send_app_data(&dst, app_data, 16, needack);
     if (len){
-        delay_ms(2000);
+        delay_ms(1000);
     }
 }
 
 int8u recv_process()
 {
+	uint8_t i;
     uint8_t len = linklay_recv_data(&app_data[0], MacPlc);
 
-    if (len == 8){
-        if (app_data[7] == 0x55 )
+    if (len == 16){
+        for (i = 0; i< 16; i++)
+        {
+        	if (app_data[i] != i)
+				break;
+        }
+		if (i == 16)
         {
 			OpenRLed;
-			delay_ms(50);
+			delay_ms(200);
 			CloseRLed;
         }
     }
