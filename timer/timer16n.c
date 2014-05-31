@@ -52,22 +52,23 @@ void init_t16g1(void)
 **************************************************************************/
 void init_t16g2(uint8_t type)
 {
-    uint16_t t16g2, t16g2r, delta;
+    uint16_t t16g1, t16g1r, delta;
         
     if (type) {        
         delta = 0xC350;     //过零后10ms产生中断 
     }
     else {
-        t16g2r = T16G1RH*256 + T16G1RL;
-        t16g2 = T16G1H*256 + T16G1L;
-    
-        if (t16g2 > t16g2r) {        
-            delta = t16g2 - t16g2r; 
+        t16g1r = T16G1RH*256 | T16G1RL;
+		T16G1CL = 0x20;   //关闭timer
+        t16g1 = T16G1H*256 | T16G1L;  
+    	T16G1CL = 0x21;   //(Fosc/2) 4:1预分频,每周期0.4us 
+        if (t16g1 >= t16g1r) {        
+            delta = t16g1 - t16g1r; 
         }
         else
         {
-            delta = 0xFFFF - t16g2r;
-            delta += t16g2;
+            delta = 0xFFFF - t16g1r;
+            delta += t16g1 + 1;
         }
         delta = 0xA604 - delta*2; //过零后8.5ms产生中断    
     }
@@ -75,7 +76,7 @@ void init_t16g2(uint8_t type)
     T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
     T16G2CL=0x10;	  //2:1预分频,每周期0.2ms,关闭定时器
     
-    T16G2RH=delta/256;   //过零后7ms产生中断 
+    T16G2RH=delta >> 8;   //过零后7ms产生中断 
     T16G2RL=delta;
     
     T16G2L=0x00;
