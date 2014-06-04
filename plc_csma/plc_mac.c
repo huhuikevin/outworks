@@ -23,9 +23,9 @@
 #include "rand.h"
 #include "timer16n.h"
 
-#ifdef CONFIG_RLED_IO
-#define RLED_ON() CONFIG_RLED_IO=1
-#define RLED_OFF() CONFIG_RLED_IO=0
+#ifdef CONFIG_IO_RLED
+#define RLED_ON() CONFIG_IO_RLED=1
+#define RLED_OFF() CONFIG_IO_RLED=0
 #else
 #define RLED_ON() NOP()
 #define RLED_OFF() NOP()

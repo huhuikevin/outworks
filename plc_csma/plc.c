@@ -38,9 +38,9 @@
 #define tx_pa_enable(en) \
 do { \
 	if (en) \
-		CONFIG_PLC_ENABLE_IO = 1; \
+		CONFIG_IO_PA_ENABLE = 1; \
 	else \
-		CONFIG_PLC_ENABLE_IO = 0; \
+		CONFIG_IO_PA_ENABLE = 0; \
 }while(0);
 /**************************************************************************
 * º¯ÊýÃû³Æ£ºplc_write_reg
@@ -1008,7 +1008,7 @@ void isr(void) interrupt
 
     if (T16G2IF && T16G2IE) {       //1   
         T16G2IE = 0; 
-	     T16G2IF = 0;        
+	    T16G2IF = 0;        
         T16G1IF = 0;
         
         switch (_plc_state) {        

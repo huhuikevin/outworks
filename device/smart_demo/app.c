@@ -9,8 +9,8 @@
 #include "debug.h"
 
 
-#define    OpenRLed CONFIG_RLED_IO=1
-#define    CloseRLed CONFIG_RLED_IO=0
+#define    OpenRLed CONFIG_IO_RLED=1
+#define    CloseRLed CONFIG_IO_RLED=0
 
 
 
