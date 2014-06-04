@@ -15,7 +15,7 @@ void iniSCI(void)
 
 void Ini2571(void)
 {    
-    PAT=0X80;    
+    PAT=0X40;    
     PBT=0X05;     //0x85      
     PCT=0X10;  
 }       
@@ -24,8 +24,9 @@ void Ini2571(void)
 void IO_Init(void)
 {
     //GIE=1;
+    /* PB 5out 4out 3out 2in 1out 0in*/
     PBT=0x05;
-    PAT=0x80;
+    PAT=0x40;
     PCT=0x10;
     PB5 = 1;
 	PB6 = 0;
