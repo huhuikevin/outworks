@@ -51,6 +51,19 @@ do{\
 	while(!uart[i].TRMT);\
 }while(0);
 
+#define uart_rx_error(i, b)\
+do{\
+	uint8_t c;\
+	b = uart[i].FERR;\
+	b <<= 1; \
+	b |= uart[i].OERR;\
+	if(b != 0){ \
+		c = uart[i].RxB; \
+		uart[i].RxEN = 0;\
+	}\
+}while(0);
+
+
 #define UART_TIMEOUT 1//10MS
 
 section64 volatile uart_register uart[3]@0xFFE0;
@@ -93,6 +106,10 @@ void UartInit(uint8_t uartIdx, uint16_t baudrate)						//Rcv function of Uart re
 uint8_t uart_rx_bytes(uint8_t *pdata)
 {
 	uint8_t rlen = 0;
+	if (0 == uart[CONFIG_LINKLAY_UART].RxEN)
+	{
+		uart[CONFIG_LINKLAY_UART].RxEN = 1;
+	}
 	if (UartRecv[CONFIG_LINKLAY_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_LINKLAY_UART].Recv_Len-1;
@@ -123,6 +140,10 @@ uint8_t uart_tx_bytes(uint8_t *pdata, uint8_t len)
 uint8_t console_uart_rx_bytes(uint8_t *pdata)
 {
 	uint8_t rlen = 0;
+	if (0 == uart[CONFIG_CONSOLE_UART].RxEN)
+	{
+		uart[CONFIG_CONSOLE_UART].RxEN = 1;
+	}	
 	if (UartRecv[CONFIG_CONSOLE_UART].Recv_finish)
 	{
 		rlen = UartRecv[CONFIG_CONSOLE_UART].Recv_Len-1;
@@ -233,6 +254,13 @@ uint8_t Uart0_Rx()
 	rlen = 0;
 	do {
 		RX1IF = 0;
+		uart_rx_error(0, tmpr);
+		if (tmpr){
+			UartRecv[0].Recv_start = 0;
+			UartRecv[0].Recv_Len = 0;
+			UartRecv[0].Recv_finish = 0;
+			return 0;
+		}
 		tmpr = uart[0].RxB;
 		if (tmpr == 0xaa)
 		{
@@ -272,6 +300,13 @@ uint8_t Uart1_Rx()
 	rlen = 0;
 	do {
 		RX2IF = 0;
+		uart_rx_error(1, tmpr);
+		if (tmpr){
+			UartRecv[1].Recv_start = 0;
+			UartRecv[1].Recv_Len = 0;
+			UartRecv[1].Recv_finish = 0;
+			return 0;
+		}		
 		tmpr = uart[1].RxB;
 		if (tmpr == 0xaa)
 		{
@@ -311,6 +346,13 @@ uint8_t Uart2_Rx()
 	rlen = 0;
 	do {
 		RX3IF = 0;
+		uart_rx_error(2, tmpr);
+		if (tmpr){
+			UartRecv[2].Recv_start = 0;
+			UartRecv[2].Recv_Len = 0;
+			UartRecv[2].Recv_finish = 0;
+			return 0;
+		}		
 		tmpr = uart[2].RxB;
 		if (tmpr == 0xaa)
 		{
@@ -356,18 +398,24 @@ uint8_t uart_rx_byte()
 #if CONFIG_LINKLAY_UART==0    
     while(RX1IF == 0);
     RX1IF = 0;
+	uart_rx_error(0, tmpr);
+	if (tmpr) return 0;
     tmpr = uart[0].RxB;
 #endif
 
 #if CONFIG_LINKLAY_UART==1    
     while(RX2IF == 0);
     RX2IF = 0;
+	uart_rx_error(1, tmpr);
+	if (tmpr) return 0;	
     tmpr = uart[1].RxB;
 #endif
 
 #if CONFIG_LINKLAY_UART==2    
     while(RX3IF == 0);
     RX3IF = 0;
+	uart_rx_error(2, tmpr);
+	if (tmpr) return 0;	
     tmpr = uart[2].RxB;
 #endif    
     return tmpr;
