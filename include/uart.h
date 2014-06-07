@@ -19,18 +19,13 @@ uint8_t console_uart_tx_bytes(uint8_t *pdata, uint8_t len);
 #endif
 void serial_data_init(uint8_t idx);
 void SetBaud(uint8_t uartIdx, uint16_t  baud);
-
-uint8_t Uart0_Tx(uint8_t *pdata, uint8_t len);
-uint8_t Uart1_Tx(uint8_t *pdata, uint8_t len);
-uint8_t Uart2_Tx(uint8_t *pdata, uint8_t len);
-
-uint8_t Uart0_Rx();
-uint8_t Uart1_Rx();
-uint8_t Uart2_Rx();
-uint8_t Uart_Rx();
-uint8_t uart_rx_byte();
-
-
+uint8_t uart_rx(uint8_t idx);
+uint8_t uart_tx(uint8_t idx, uint8_t *pdata, uint8_t len);
+uint8_t _uart_rx_bytes(uint8_t idx, uint8_t *pdata);
+uint8_t uart_rx_one_byte();
+void uart_tx_one_byte(uint8_t b);
+uint8_t uart_send_frame(uint8_t *pdata, uint8_t len);
+int8_t uart_rx_frame(uint8_t *pdata);
 #endif /* __UART__H_ */
 
 

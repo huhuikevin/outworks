@@ -63,10 +63,10 @@ void uart_test()
 {
 	uint8_t b=0x55;
 #ifdef SENDER    
-	uart_tx_bytes(&b, 1);
+	uart_tx_one_byte(b);
 #else    
-	b = uart_rx_byte();    
-	uart_tx_bytes(&b, 1);
+	b = uart_rx_one_byte();    
+	uart_tx_one_byte(b);
 #endif
 }
 
