@@ -87,10 +87,10 @@ void plc_mac_proc(void)
             plc_sent = plc_data_send(&_mac_tx_buf.mac_frame, _mac_tx_buf.mac_frame.len);
             if (!plc_sent)
 	         _mac_tx_buf.stat = tx_csma;
-	     else
+	     else {
 		  _mac_tx_buf.stat = tx_ok;
-            
-            return;            
+            	  return; 
+	     }
         }
         else {
 	     _mac_tx_buf.stat = tx_csma;
