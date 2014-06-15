@@ -91,3 +91,24 @@ void DelayMs(uint32_t MS)
         }
     }
 }
+
+
+void print_num(uint32_t num)
+{
+	uint32_t t = num;
+	uint8_t tail[10];
+	uint8_t i = 0;
+	do {
+		tail[i] = t % 10;
+		t = t / 10;
+		i++;
+	}while(t != 0);
+	while(i-- != 0){
+		console_tx_one_byte('0'+tail[i]);
+	}
+}
+
+void print_char(uint8_t ch)
+{
+	console_tx_one_byte(ch);
+}
