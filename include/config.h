@@ -29,12 +29,12 @@
 #define CONFIG_UART 1
 
 #ifdef CONFIG_UART
-#define CONFIG_LINKLAY_UART 1 // 定义哪个uart口用作link层通信用
+#define CONFIG_LINKLAY_UART 0 // 定义哪个uart口用作link层通信用
 
-//#define CONFIG_CONSOLE 1 // 系统console口使能
+#define CONFIG_CONSOLE 1 // 系统console口使能
 
 #ifdef CONFIG_CONSOLE
-#define CONFIG_CONSOLE_UART 2 // 系统console print用哪个uart口
+#define CONFIG_CONSOLE_UART 1 // 系统console print用哪个uart口
 #endif
 #endif //CONFIG_UART
 

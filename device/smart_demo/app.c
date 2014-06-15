@@ -12,8 +12,6 @@
 #define    OpenRLed CONFIG_IO_RLED=1
 #define    CloseRLed CONFIG_IO_RLED=0
 
-
-
 //#define SENDER 1
 
 section4 uint8_t app_data[MAX_APP_DATA_LEN];
@@ -58,15 +56,15 @@ int8u recv_process()
     }
 }
 
-
 void uart_test()
 {
 	uint8_t b=0x55;
+
 #ifdef SENDER    
-	uart_tx_one_byte(b);
+	console_tx_one_byte(b);
 #else    
-	b = uart_rx_one_byte();    
-	uart_tx_one_byte(b);
+	b = console_rx_one_byte();    
+	console_tx_one_byte(b);
 #endif
 }
 

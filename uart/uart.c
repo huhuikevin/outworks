@@ -114,21 +114,6 @@ uint8_t uart_tx_bytes(uint8_t *pdata, uint8_t len)
 }
 #endif
 
-
-#ifdef CONFIG_CONSOLE
-uint8_t console_uart_rx_bytes(uint8_t *pdata)
-{
-	return _uart_rx_bytes(CONFIG_CONSOLE_UART, pdata);
-}
-
-uint8_t console_uart_tx_bytes(uint8_t *pdata, uint8_t len)
-{
-
-	return uart_tx(CONFIG_CONSOLE_UART, pdata, len);
-}
-
-#endif
-
 uint8_t _uart_rx_bytes(uint8_t idx, uint8_t *pdata)
 {
 	uint8_t rlen = 0;
@@ -231,23 +216,27 @@ void serial_data_init(uint8_t idx)
 }
 
 
-uint8_t uart_rx_one_byte()
+uint8_t console_rx_one_byte()
 {
-       char tmpr;
-	uint8_t mask = 1 << (CONFIG_LINKLAY_UART*2 + 1);
+    char tmpr = 0;
+#ifdef CONFIG_CONSOLE	
+	uint8_t mask = 1 << (CONFIG_CONSOLE_UART*2 + 1);
 	
 	while ((INTF2  & mask) == 0) ;
        INTF2 &= ~mask;
-       uart_rx_error(CONFIG_LINKLAY_UART, tmpr);
+       uart_rx_error(CONFIG_CONSOLE_UART, tmpr);
        if (tmpr) return 0;
-       tmpr = uart[CONFIG_LINKLAY_UART].RxB;
-	   
+       tmpr = uart[CONFIG_CONSOLE_UART].RxB;
+#endif	   
        return tmpr;
 }
 
-void uart_tx_one_byte(uint8_t b)
+void console_tx_one_byte(uint8_t b)
 {
-	UART_CHAR_SEND(CONFIG_LINKLAY_UART, b);
+#ifdef CONFIG_CONSOLE
+	UART_CHAR_SEND(CONFIG_CONSOLE_UART, b);
+#endif
+
 }
 
 
