@@ -141,7 +141,7 @@ uint8_t Bcd_To_Hex( uint8_t value )
 ***********************************************************/
 void Hex2Bcd( uint8_t *Hexopt, uint8_t *BCDopt, uint8_t Len ) //要求Len不能大于4
 { 
- 
+	MMemcpy(BCDopt, Hexopt, Len);
 }
 void Hex2Bcd_4(uint8_t *HEXopt, uint8_t *BCDopt)
 {
@@ -155,9 +155,9 @@ void Hex2Bcd_4(uint8_t *HEXopt, uint8_t *BCDopt)
 ***********************************************************/
 void Bcd2Hex( uint8_t *BCDopt, uint8_t *HEXopt, uint8_t Len ) 
 {
-
+	MMemcpy(HEXopt, BCDopt, Len);
 }
 void Bcd2Hex_4(uint8_t *BCDopt, uint8_t *HEXopt)
 {
- 
+ 	Bcd2Hex( BCDopt, HEXopt, 4 );
 }
