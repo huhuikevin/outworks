@@ -43,11 +43,14 @@ void board_init()
     //timer8n_init();
 	
 #ifdef CONFIG_LINKLAY_UART	
-	UartInit(CONFIG_LINKLAY_UART, 9600);
+	uart_init(CONFIG_LINKLAY_UART, 9600, 0, 0);
 #endif
 
 #ifdef CONFIG_CONSOLE_UART
-	UartInit(CONFIG_CONSOLE_UART, 9600);
+	uart_init(CONFIG_CONSOLE_UART, 9600, 0, 0);
+#endif
+#ifdef CONFIG_HG72xx_UART
+	uart_init(CONFIG_HG72xx_UART, 2400, 1, 1);
 #endif
 }
 

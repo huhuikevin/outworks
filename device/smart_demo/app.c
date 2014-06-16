@@ -63,8 +63,14 @@ void uart_test()
 #ifdef SENDER    
 	console_tx_one_byte(b);
 #else    
-	b = console_rx_one_byte();    
-	console_tx_one_byte(b);
+	b = console_rx_one_byte();
+   print_char(b);
+   //print_char('\n');
+   print_num(200);
+   //delay_ms(1000);
+   print_char('\r');
+   print_char('\n');
+	//console_tx_one_byte(b);
 #endif
 }
 

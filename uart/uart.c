@@ -89,11 +89,11 @@ uint8_t Calc_baud(int16u baud)
 			return 54;
 	}
 }
-void UartInit(uint8_t uartIdx, uint16_t baudrate)						//Rcv function of Uart reset
+void uart_init(uint8_t uartIdx, uint16_t baudrate, uint8_t tx8, uint8_t rx8)						//Rcv function of Uart reset
 {
   
-	uart[uartIdx].TxM = 0;// 8bit data tx
-	uart[uartIdx].RxM = 0;// 8bit data rx
+	uart[uartIdx].TxM = tx8;// 8bit data tx
+	uart[uartIdx].RxM = rx8;// 8bit data rx
 
 	SetBaud(uartIdx, baudrate);
     uart[uartIdx].RxEN= 1; 
@@ -215,17 +215,16 @@ void serial_data_init(uint8_t idx)
     MMemSet((int8u *)&uart_recv[idx],0,sizeof(uart_rx_buffer));
 }
 
-
 uint8_t console_rx_one_byte()
 {
     char tmpr = 0;
 #ifdef CONFIG_CONSOLE	
 	uint8_t mask = 1 << (CONFIG_CONSOLE_UART*2 + 1);
-	
+	if ( 0 == uart[CONFIG_CONSOLE_UART].RxEN)
+		uart[CONFIG_CONSOLE_UART].RxEN = 1;
 	while ((INTF2  & mask) == 0) ;
        INTF2 &= ~mask;
        uart_rx_error(CONFIG_CONSOLE_UART, tmpr);
-       if (tmpr) return 0;
        tmpr = uart[CONFIG_CONSOLE_UART].RxB;
 #endif	   
        return tmpr;
@@ -259,6 +258,8 @@ uint16_t uart_crc(uint8_t data, uint8_t regval)
 
 uint8_t uart_send_frame(uint8_t *pdata, uint8_t len)
 {
+#ifdef CONFIG_LINKLAY_UART
+
 	uint16_t crc;
 	uint8_t i;
 
@@ -274,10 +275,14 @@ uint8_t uart_send_frame(uint8_t *pdata, uint8_t len)
 	uart_tx_bytes(pdata, len);
 
 	return len;
+#else
+	return 0;
+#endif
 }
 
 int8_t uart_rx_frame(uint8_t *pdata)
 {
+#ifdef CONFIG_LINKLAY_UART
 	uint8_t i, rlen = 0;
 	uint8_t *pbuf;
 	uint16_t crc;
@@ -302,5 +307,8 @@ int8_t uart_rx_frame(uint8_t *pdata)
 	
 	MMemcpy(pdata,&pbuf[3],rlen);
 	return rlen;
+#else
+	return 0;
+#endif
 }
 

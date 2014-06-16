@@ -1,12 +1,12 @@
 #include "type.h"
 #include "system.h"
 #include "tool.h"
-//#include "uart.h"
+#include "uart.h"
 
- int8u CalChecksum( int8u *p_data, int16u len)
+ uint8_t CalChecksum( uint8_t *p_data, uint16_t len)
 {
-  int8u checksum = 0;
-  int16u i;
+  uint8_t checksum = 0;
+  uint16_t i;
 
   for(i=0;i<len;i++)
     checksum += p_data[i];
@@ -14,30 +14,37 @@
   return checksum;
 }
 
- void MMemSet(void *dest,int8u value,int8u count)
+void* memset00(uint8_t * p1, uint8_t n) 
 {
-   int8u *d=(int8u *)dest;
-   int8u i;
+	while(n--)
+  {
+		*p1++ = 0x00;
+  }
+}
+ void MMemSet(void *dest,uint8_t value,uint8_t count)
+{
+   uint8_t *d=(uint8_t *)dest;
+   uint8_t i;
    for(i=0;i<count;i++)
    	*d++=value;
 }
 
- void MMemcpy( void *dest,  void *src, int16u count) 
+ void MMemcpy( void *dest,  void *src, uint16_t count) 
 {
-	int16u i;
-	int8u *d = (int8u *)dest;
-	int8u *s = (int8u *)src;
+	uint16_t i;
+	uint8_t *d = (uint8_t *)dest;
+	uint8_t *s = (uint8_t *)src;
 
 	for(i=0;i<count;i++)
 		*d++ = *s++;
 
 }
 
-int8u MMemcmp( void *buf1,  void *buf2, int8u count)
+uint8_t MMemcmp( void *buf1,  void *buf2, uint8_t count)
 {
-	int8u i;
-	int8u *d = (int8u *)buf1;
-	int8u *s = (int8u *)buf2;
+	uint8_t i;
+	uint8_t *d = (uint8_t *)buf1;
+	uint8_t *s = (uint8_t *)buf2;
 
 	for(i=0;i<count;i++)
 	{
@@ -111,4 +118,46 @@ void print_num(uint32_t num)
 void print_char(uint8_t ch)
 {
 	console_tx_one_byte(ch);
+}
+
+
+/********************单字节BCD码转HEX码***********************
+函 数 名：  Bcd_To_Hex                        
+功能描述：  单字节BCD码转HEX码  
+输入参数：  待转换的BCD码                                    
+函数返回值：转换后的HEX码                                           
+***********************************************************/
+uint8_t Bcd_To_Hex( uint8_t value )	
+{
+  return ( ((value&0xF0)>>4)*10+(value&0x0F) );
+}
+
+
+/********************多字节HEX码转BCD码***********************
+函 数 名：  Hex_To_Bcd                        
+功能描述：  多字节HEX码转BCD码，Len不能超过4  
+输入参数：  HEX码指针，BCD码指针，字节长度                                    
+函数返回值：无                                           
+***********************************************************/
+void Hex2Bcd( uint8_t *Hexopt, uint8_t *BCDopt, uint8_t Len ) //要求Len不能大于4
+{ 
+ 
+}
+void Hex2Bcd_4(uint8_t *HEXopt, uint8_t *BCDopt)
+{
+  Hex2Bcd( HEXopt, BCDopt, 4 );
+}
+/********************多字节BCD码转HEX码***********************
+函 数 名：  Bcd2Hex                        
+功能描述：  多字节BCD码转HEX码  
+输入参数：  BCD码指针，HEX码指针，字节长度                                    
+函数返回值：无                                           
+***********************************************************/
+void Bcd2Hex( uint8_t *BCDopt, uint8_t *HEXopt, uint8_t Len ) 
+{
+
+}
+void Bcd2Hex_4(uint8_t *BCDopt, uint8_t *HEXopt)
+{
+ 
 }

@@ -5,7 +5,7 @@ uart.h
 #define __UART__H_
 
 
-void UartInit(uint8_t uartIdx, uint16_t baudrate);
+void uart_init(uint8_t uartIdx, uint16_t baudrate, uint8_t tx8, uint8_t rx8);
 void uart_driver_process(void);
 
 uint8_t uart_rx_bytes(uint8_t *pdata);

@@ -29,7 +29,7 @@
 #define CONFIG_UART 1
 
 #ifdef CONFIG_UART
-#define CONFIG_LINKLAY_UART 0 // 定义哪个uart口用作link层通信用
+//#define CONFIG_LINKLAY_UART 2 // 定义哪个uart口用作link层通信用
 
 #define CONFIG_CONSOLE 1 // 系统console口使能
 
@@ -55,6 +55,8 @@
 #define CONFIG_LED1 PC2
 #define CONFIG_LED3 PC3
 
+#define CONFIG_HG7220_MODE 1 //0 SPI ,1 UART 
+#define CONFIG_HG72xx_UART 0
 
 //#define CONFIG_HW2000 1
 #endif/* __CONFIG__H_ */
