@@ -76,8 +76,6 @@
 
 #define  SPIMI        PD1
 /*****函数执行结果******/
-#define 	SUCCEED	   0X00        //成功
-#define  FAILED	   0X01        //失败
 
 /*****二进制数据定义*****/
 #define B0000_0000 0x00

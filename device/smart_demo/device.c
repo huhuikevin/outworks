@@ -6,6 +6,7 @@
 #include "plc_mac.h"
 //#include "timer8n.h"
 #include "uart.h"
+#include "hw2000_drv.h"
 
 void iniSCI(void)
 {
@@ -45,6 +46,9 @@ void board_init()
  
 	plc_mac_init(50,2);
     //timer8n_init();
+#ifdef CONFIG_HW2000    
+	hw2000_init();
+#endif
 #ifdef CONFIG_LINKLAY_UART	
 	uart_init(CONFIG_LINKLAY_UART, 9600, 0, 0);
 #endif

@@ -4,36 +4,35 @@
 #include "config.h"
 #include "system.h"
 #include "tool.h"
+
 #ifdef SPI_GPIO
+
 #define spi_start() CONFIG_SPI_CSN = 0 // 0 CS ENBALE
 #define spi_stop() CONFIG_SPI_CSN = 1
 
 #define spi_clk_h() CONFIG_SPI_SCK = 1
 #define spi_clk_l() CONFIG_SPI_SCK = 0
 
-#define spi_rx_bit()  spi_bit=CONFIG_SPI_MISO
-#define spi_tx_bit(b)  CONFIG_SPI_MOSI=b
-
-sbit spi_bit;
+#define miso(b)  b = CONFIG_SPI_MISO
+#define mosi(b)  CONFIG_SPI_MOSI = b
 
 /*接收方使用下降沿接收，所以这里要给一个下降沿*/
 #define spi_tx_bit(b)\
 do{\
+	mosi(b);\
 	spi_clk_h();\
-	spi_tx_bit(b);\
 	Delay1us();\
 	spi_clk_l();\
 	Delay1us();\
 }while(0);
 
-/**/
-#define spi_rx_bit()\
+#define spi_rx_bit(b)\
 do{\
+	spi_clk_h();\
+	Delay1us();\
 	spi_clk_l();\
 	Delay1us();\
-	spi_clk_h();\ 
-	Delay1us();\
-	spi_rx_bit();\
+	miso(b);\
 }while(0);
 
 void Delay1us()// 10 T
@@ -41,50 +40,90 @@ void Delay1us()// 10 T
 	NOP();NOP();NOP();NOP();NOP();
 }
 
-void spi_tx_one_byte(uchar c)
+void spi_write_byte(uint8_t c)
 {
-	uchar i;
-	for (i = 0; i< sizeof(uchar); i++){
-		if (c&0x80)
+	uint8_t i;
+	for (i = 0; i < sizeof(uint8_t); i++){
+		if (c&0x80) {
 			spi_tx_bit(1);
-		else
+		}
+		else {
 			spi_tx_bit(0);
+		}	
 		c <<= 1;
 	}
 }
 
-void spi_rx_one_byte(uchar *c)
+uint8_t spi_read_byte()
 {
-	uchar i;
-	for (i = 0; i< sizeof(uchar); i++){
-		spi_rx_bit();
+	uint8_t i;
+	uint8_t c = 0;
+	uint8_t spi_bit;
+	for (i = 0; i< sizeof(uint8_t); i++){
+		spi_rx_bit(spi_bit);
 		c <<= 1;
 		if (spi_bit)
 			c |= 1;
 	}
+	return c;
 }
 
 
-void spi_write(uchar addr , uchar *data, uchar len)
+void spi_tx_word(uint8_t addr, uint16_t w)
 {
-	uchar i;
+	uint8_t i;
 	spi_start();
-	spi_tx_one_byte((0x80|addr));
-
-	for (i = 0; i < len; i++){
-		spi_tx_one_byte(*(data + i));
+	spi_write_byte((0x80|addr));//send addr
+	for (i = 0; i< sizeof(uint16_t); i++){
+		if (w & 0x8000) {
+			spi_tx_bit(1);
+		}
+		else {
+			spi_tx_bit(0);
+		}
+		w <<= 1;
 	}
 	spi_stop();
 }
 
-void spi_read(uchar addr , uchar *data, uchar len)
+uint16_t spi_rx_word(uint8_t addr)
 {
-	uchar i;
+	uint8_t i;
+	uint16_t w = 0;
+	uint8_t spi_bit;
 	spi_start();
-	spi_tx_one_byte((0x7e&addr));
+	spi_write_byte(addr);// send addr
+	for (i = 0; i< sizeof(uint16_t); i++){
+		spi_rx_bit(spi_bit);
+		w <<= 1;
+		if (spi_bit)
+			w |= 1;
+	}
+	spi_stop();
+	return w;
+}
+
+
+void spi_write(uint8_t addr , uint8_t *data, uint8_t len)
+{
+	uint8_t i;
+	spi_start();
+	spi_write_byte((0x80|addr));
 
 	for (i = 0; i < len; i++){
-		spi_rx_one_byte((data + i));
+		spi_write_byte(*(data + i));
+	}
+	spi_stop();
+}
+
+void spi_read(uint8_t addr , uint8_t *data, uint8_t len)
+{
+	uint8_t i;
+	spi_start();
+	spi_write_byte((0x7e&addr));
+
+	for (i = 0; i < len; i++){
+		*((data + i)) = spi_read_byte();
 	}
 	spi_stop();
 }

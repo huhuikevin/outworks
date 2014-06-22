@@ -8,8 +8,8 @@
 #ifdef CONFIG_LINKLAY_UART
 void uart_driver_process(void);
 #endif
-#ifdef CONFIG_W2_4G    
-void w2_4mac_driver_process(void);
+#ifdef CONFIG_HW2000    
+void hw2000_driver_process(void);
 #endif    
 void plc_driver_process(void);
 void linklay_process(void);
@@ -27,9 +27,9 @@ void sys_app_process()
     plc_mac_proc();
     watchdog();
     //timer8N();
-#ifdef CONFIG_W2_4G    
+#ifdef CONFIG_HW2000    
     /* 2.4G mac层收发处理，驱动层 */
-    w2_4mac_driver_process();
+    hw2000_driver_process();
     watchdog();
 #endif  
     /* 链路层处理，包括了plc和2.4G或其他的协议 */

@@ -36,6 +36,21 @@ typedef signed long     int32_t;
 #define BYTE_2(n)                    ((int8u)(BYTE_0((n) >> 16)))
 #define BYTE_3(n)                    ((int8u)(BYTE_0((n) >> 24)))
 
+#define BIT0    (1 << 0)
+#define BIT1    (1 << 1)
+#define BIT2    (1 << 2)
+#define BIT3    (1 << 3)
+#define BIT4    (1 << 4)
+#define BIT5    (1 << 5)
+#define BIT6    (1 << 6)
+#define BIT7    (1 << 7)
+
+#define TRUE    1
+#define FALSE   0
+
+#define SUCCEED 1
+#define FAILED  0
+
 
 union SVR_LONG_B08{	
 	unsigned char NumChar[4];

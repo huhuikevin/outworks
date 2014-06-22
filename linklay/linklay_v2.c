@@ -17,7 +17,9 @@ uartsend --> uartrecv --> plcsend ---> plcrecv--->op--->plcsend --->plcrecv--->u
 #include "timer16n.h"
 #include "route.h"
 #include "linklay_v2.h"
-
+#ifdef CONFIG_HW2000
+#include "hw2000_drv.h"
+#endif
 #define VERSION 0
 
 typedef enum {
@@ -467,7 +469,7 @@ uint8_t mac_rx_bytes(uint8_t mac_type, link_frame_t *pFrame, uint8_t *prssi)
         return plc_mac_rx_with_rssi((uint8_t *)pFrame, prssi);
 #ifdef CONFIG_HW2000
     else if (mac_type == MacHw2000)
-        return hw2000_rx_bytes((uchar *)pFrame);
+        return hw2000_rx_bytes((uint8_t *)pFrame);
 #endif
     return 0;
 }
