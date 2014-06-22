@@ -28,11 +28,15 @@ void IO_Init(void)
     PBT=0x05;
     PAT=0x40;
     PCT=0x10;
-    PB5 = 1;
-	PB6 = 0;
-	PB7 = 0;    
-    DelayMs(1000);
     PB5 = 0;
+	PB6 = 0;
+	PB7 = 0;
+	CONFIG_LED1 = 1;
+	CONFIG_LED2 = 1;
+    DelayMs(1000);
+	CONFIG_LED1 = 0;
+	CONFIG_LED2 = 0;
+
 }
 
 void board_init()
@@ -41,7 +45,6 @@ void board_init()
  
 	plc_mac_init(50,2);
     //timer8n_init();
-	
 #ifdef CONFIG_LINKLAY_UART	
 	uart_init(CONFIG_LINKLAY_UART, 9600, 0, 0);
 #endif

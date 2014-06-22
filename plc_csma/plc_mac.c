@@ -23,13 +23,7 @@
 #include "rand.h"
 #include "timer16n.h"
 
-#ifdef CONFIG_IO_RLED
-#define RLED_ON() CONFIG_IO_RLED=1
-#define RLED_OFF() CONFIG_IO_RLED=0
-#else
-#define RLED_ON() NOP()
-#define RLED_OFF() NOP()
-#endif
+
 #define CSMA_DB (int8_t)(-30)
 /**************************************************************************
 * º¯ÊýÃû³Æ£ºplc_mac_proc

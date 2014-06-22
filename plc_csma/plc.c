@@ -597,6 +597,7 @@ void plc_rx_1bit(void)
     uint8_t i;
     
     //延时用于比特采样同步，约1320NOP
+ #if 0   
     DELAY100NOP();
     DELAY100NOP();
     DELAY100NOP();
@@ -611,7 +612,18 @@ void plc_rx_1bit(void)
     DELAY100NOP();
 	DELAY100NOP();
     DELAY20NOP();
-    
+ #else
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY100NOP();
+	DELAY10NOP();
+ #endif
      //do {
      for (i = 0; i < 62; i++) { 
         if (PLC_FSK_RXD) {   // 3nop               //sample 0
