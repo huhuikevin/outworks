@@ -1012,11 +1012,25 @@ void isr(void) interrupt
     uint8_t j;
     
 	 if (T16G1IF && T16G1IE) {
-	     init_t16g2(0);
-        _sys_tick++;
-        _t16g1_valid = 1;
-	     T16G1IF = 0;
-     }
+		 _sys_tick++;
+		 
+		 _last_time = _now_time;			 //记录上一次过零时刻
+		 _now_time = T16G1RH*256 | T16G1RL;  //记录当前过零时刻
+		 
+		 if (_now_time > _last_time) {		  
+			 _half_time = _now_time - _last_time; 
+		 }
+		 else
+		 {
+			 _half_time = 0xFFFF - _last_time;
+			 _half_time += _now_time + 1;
+		 }		  
+		 
+		 init_t16g2(0);
+		 _t16g1_valid = 1;
+		  T16G1IF = 0;	
+
+    }
 
     if (T16G2IF && T16G2IE) {       //1   
         T16G2IE = 0; 

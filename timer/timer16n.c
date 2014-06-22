@@ -37,6 +37,7 @@ void init_t16g1(void)
     T16G1IE=1;     
     
     _t16g1_valid = 0;
+	_half_time = 50000;    //初始化为10ms
 }
 
 /**************************************************************************
@@ -55,22 +56,28 @@ void init_t16g2(uint8_t type)
     uint16_t t16g1, t16g1r, delta;
         
     if (type) {        
-        delta = 0xC350;     //过零后10ms产生中断 
+        delta = _half_time - 81;     //过零后_half_time产生中断 
     }
     else {
-        t16g1r = T16G1RH*256 | T16G1RL;
-		T16G1CL = 0x20;   //关闭timer
-        t16g1 = T16G1H*256 | T16G1L;  
+        T16G1CL = 0x20;   //关闭timer
+        t16g1 = T16G1H*256 | T16G1L;
+		t16g1 += 27;
+        T16G1H = t16g1 / 256;
+        T16G1L = t16g1;
+		
     	T16G1CL = 0x21;   //(Fosc/2) 4:1预分频,每周期0.4us 
-        if (t16g1 >= t16g1r) {        
-            delta = t16g1 - t16g1r; 
+    	t16g1 -= 27;
+        if (t16g1 >= _now_time) {        
+            delta = t16g1 - _now_time;
+            DELAY10NOP();
+            DELAY1NOP();    //if/else对齐			
         }
         else
         {
-            delta = 0xFFFF - t16g1r;
+            delta = 0xFFFF - _now_time;
             delta += t16g1 + 1;
         }
-        delta = 0xA604 - delta*2; //过零后8.5ms产生中断    
+        delta = _half_time - 7750 - delta*2 - 125; //过零点前1.55ms产生中断   
     }
     
     T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
