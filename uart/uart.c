@@ -96,7 +96,8 @@ void uart_init(uint8_t uartIdx, uint16_t baudrate, uint8_t tx8, uint8_t rx8)				
 	uart[uartIdx].RxM = rx8;// 8bit data rx
 
 	SetBaud(uartIdx, baudrate);
-    uart[uartIdx].RxEN= 1; 
+    uart[uartIdx].RxEN= 1;
+	uart[uartIdx].TxEN = 1;
 	serial_data_init(uartIdx);
 	uart_recv[uartIdx].inited = 1;
 }

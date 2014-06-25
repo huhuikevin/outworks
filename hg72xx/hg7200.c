@@ -259,7 +259,7 @@ uint8_t Emu_Com_Op(uint8_t OpMode) 	//操作类型,0=>Write,1=>Read
 	}
 	return 1;			//读写失败
 }
-     #else
+#else
 /*****************奇偶校验函数 ***********************************
 函 数 名：  uint8_t Check_OddEven1(uint8_t Data)      
 功能描述：  判断数据奇偶                     
@@ -291,12 +291,10 @@ void HG7220_uart_tx(uint8_t senddata)
 	uint8_t temp08;
  	temp08  = Check_OddEven1(senddata);//奇偶校验
   
- 	UART_TX_EN=1;
 	UART_TX8_REG = temp08;  
 	UART_TX_REG = senddata; 
 	delay_ms(1);
 	while (!UART_TRMT_REG);
-	UART_TX_EN=0;
 	return;
 }
 /*****************读计量芯片数据urat接收函数 *********************
