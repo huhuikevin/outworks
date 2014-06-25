@@ -46,7 +46,15 @@
 #endif
 #endif //CONFIG_UART
 
+#define CONFIG_PWM_IDX 0
+#if CONFIG_PWM_IDX=0
+#define CONFIG_PWM_IO PB5 //PB4
+#endif
+#if CONFIG_PWM_IDX=1
+#define CONFIG_PWM_IO PB7 //PB6
+#endif
 
+#endif
 
 #ifdef SPI_GPIO
 #define CONFIG_SPI_CE   PA2
