@@ -3,7 +3,7 @@
 #define __CONFIG__H_
 
 #define CONFIG_NO_ROUTE 
-#define CONFIG_DEFAULT_MAC 0
+#define CONFIG_DEFAULT_MAC 1
 
 #define CONFIG_TYPE_AUTODEVICE
 //#define CONFIG_TYPE_AUTOGATEWAY
@@ -47,14 +47,13 @@
 #endif //CONFIG_UART
 
 #define CONFIG_PWM_IDX 0
-#if CONFIG_PWM_IDX=0
+#if (CONFIG_PWM_IDX==0)
 #define CONFIG_PWM_IO PB5 //PB4
 #endif
-#if CONFIG_PWM_IDX=1
+#if (CONFIG_PWM_IDX==1)
 #define CONFIG_PWM_IO PB7 //PB6
 #endif
 
-#endif
 
 #ifdef SPI_GPIO
 #define CONFIG_SPI_CE   PA2

@@ -7,7 +7,7 @@
 #define PLC_TEST 
 //#define UART_TEST
 
-#define SENDER 1
+//#define SENDER 1
 
 
 #endif/* __DEBUG__H_ */

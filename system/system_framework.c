@@ -1,5 +1,6 @@
 //单片机系统架构 main入口
 #include <hic.h>
+#include "config.h"
 #include "type.h"
 #include "system.h"
 #include "tool.h"
@@ -10,7 +11,11 @@ void uart_driver_process(void);
 #endif
 #ifdef CONFIG_HW2000    
 void hw2000_driver_process(void);
-#endif    
+#endif
+#ifdef CONFIG_UART
+void uart_driver_process(void);
+#endif
+
 void plc_driver_process(void);
 void linklay_process(void);
 void app_process(void);

@@ -39,7 +39,7 @@ void send_process()
 int8u recv_process()
 {
 	uint8_t i;
-    uint8_t len = linklay_recv_data(&app_data[0], MacPlc);
+    uint8_t len = linklay_recv_data(&app_data[0], MacHw2000);
 
     if (len == 16){
         for (i = 0; i< 16; i++)

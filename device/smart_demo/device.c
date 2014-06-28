@@ -32,6 +32,7 @@ void IO_Init(void)
     PB5 = 0;
 	PB6 = 0;
 	PB7 = 0;
+	CONFIG_3_3V_CTRL = 0;
 	CONFIG_LED1 = 1;
 	CONFIG_LED2 = 1;
     DelayMs(1000);

@@ -3,6 +3,7 @@
 #include "type.h"
 #include "config.h"
 #include "system.h"
+#include "timer16n.h"
 #include "tool.h"
 #include "spi_drv.h"
 
@@ -32,9 +33,14 @@ typedef struct{
 
 
 section30 hw2000_t hw2000;
+#if 0
 unsigned short agcTab[18]={0x0200,0x0200,0x0200,0x0200,0x0208,0x0210,
 									 0x0440,0x0480,0x04C0,0x04C8,0x04D0,0x04D8,
 									 0x04D9,0x04DA,0x06D1,0x06D9,0x06E1,0x06E2};
+#endif
+uint16_t reg_val;
+
+
 
 void hw2000_delay4us(void)
 {
@@ -45,22 +51,28 @@ void hw2000_delay4us(void)
     NOP();NOP();NOP();NOP();NOP();
     NOP();NOP();NOP();NOP();NOP();
     NOP();NOP();NOP();NOP();NOP();
-    // NOP();NOP();NOP();NOP();NOP();
-    // NOP();NOP();NOP();NOP();NOP();
-
-    //NOP();NOP();NOP();
-    //NOP();NOP();
 }
-
 
 uint16_t hw2000_read_register(uint8_t addr)
 {
-	return spi_rx_word(addr);
+	uint16_t val;
+	val = spi_rx_word(addr);
+	return val;
 }
 
 void hw2000_write_register(uint8_t addr , uint16_t Value)
 {
 	spi_tx_word(addr, Value);
+}
+
+void hw2000_read_fifo(uint8_t addr , uint8_t *data, uint8_t len)
+{
+	spi_read(addr, data, len);
+}
+
+void hw2000_write_fifo(uint8_t addr , uint8_t *data, uint8_t len)
+{
+	spi_write(addr, data, len);
 }
 
 void hw2000_rx_enable()
@@ -93,7 +105,7 @@ void hw2000_port_init()
 {
 	PAT &= ~(BIT2 + BIT3 + BIT4 + BIT5);
 	PAT |= (BIT6 + BIT7);
-		
+	
 	CONFIG_SPI_CE = 1;
 		
 	CONFIG_SPI_CSN = 1;
@@ -102,7 +114,7 @@ void hw2000_port_init()
 		
 	CONFIG_3_3V_CTRL = 1; //电源开
 }
-
+#if 0
 void hw2000_init()
 {
 	uint8_t j = 0;   
@@ -141,9 +153,11 @@ void hw2000_init()
 	hw2000_write_register(0x1B, 0xC554);
 #endif
 	//FIFO half full set 	//empty and full thres is 16
-	hw2000_write_register(0x28, ((FIFO_THRES_EMPTY - 1)<<11) | ((FIFO_THRES_FULL -1) << 6) | 0x2);//(0x28, 0x8403);
-	hw2000_write_register(0x2C, 0x918B);
+	//hw2000_write_register(0x28, ((FIFO_THRES_EMPTY - 1)<<11) | ((FIFO_THRES_FULL -1) << 6) | 0x2);//(0x28, 0x8403);
+	//hw2000_write_register(0x2C, 0x918B);
 
+	rf_write_reg(0x28, 0xF402);
+	rf_write_reg(0x2C, 0x918B);
 
 #if 0
 #if RATE_1M	
@@ -209,33 +223,65 @@ void hw2000_init()
 
 	hw2000_write_register(0x22, 0x1830);	
 
-	hw2000_write_register(0x37, 0x0000); //FIFO1_EN = 0, PTX_FIFO1_OCPY = 0
+	//hw2000_write_register(0x37, 0x0000); //FIFO1_EN = 0, PTX_FIFO1_OCPY = 0
 
-	
-	hw2000_rx_enable();
+	//hw2000_write_register(0x3d, 0x8888);//清楚中断
+	//hw2000_rx_enable();
+	//hw2000_write_register(0x3b, 0x0080);// clear rx fifo read pointer
 	
 }
+#endif
+void hw2000_init(void)
+{
+    uint8_t i;
+    uint16_t agcTab[18] = {0x0200, 0x0200, 0x0200, 0x0200, 0x0208, 0x0210, 
+                           0x0440, 0x0480, 0x04C0, 0x04C8, 0x04D0, 0x04D8,
+                           0x04D9, 0x04DA, 0x06D1, 0x06D9, 0x06E1, 0x06E2};
+
+	hw2000_port_init();
+	delay_ms(50);
+    hw2000_write_register(0x4C, 0x55AA);
+    
+    hw2000_write_register(0x01, 0x8FFF);
+    hw2000_write_register(0x08, 0x73C4);
+    hw2000_write_register(0x09, 0xC481);
+    //hw2000_write_register(0x28, 0xF402);
+    hw2000_write_register(0x28, ((FIFO_THRES_EMPTY - 1)<<11) | ((FIFO_THRES_FULL -1) << 6) | 0x2);//(0x28, 0x8403);
+    hw2000_write_register(0x2C, 0x918B);
+    
+    for (i = 0; i < 18; i++) {
+        hw2000_write_register(0x50 + i, agcTab[i]);            
+    }
+    
+    hw2000_write_register(0x20, 0xF060); //preamble 16bytes sync 48bits trailer 4bits
+
+	hw2000_write_register(0x22, 0x1830); 
+	hw2000_write_register(0x3d, 0x8888);//清楚中断
+	hw2000_write_register(0x37, 0x0000);
+	hw2000_rx_enable();
+    
+}
+
 
 uint8_t hw2000_tx_bytes(uint8_t *pdata, uint8_t len)
 {
-	uint16_t val;
 	uint8_t reman;
 	uint8_t *ptx = pdata;
 	//enable transmit 
 	if (hw2000.stat != hw2000_idle)
 		return 0;
+	CONFIG_LED2 = 1;
 	hw2000.stat = hw2000_txing;
 
 	hw2000_tx_enable(1);
-
-	spi_write(0x32, &len, 1);// write the send len;
+	hw2000_write_fifo(0x32, &len, 1);// write the send len;
 
 	if (len <= (FIFO_SIZE-1)){
-		spi_write(0x32, pdata, len);
+		hw2000_write_fifo(0x32, pdata, len);
 		reman = 0;
 		ptx = pdata + len;
 	}else{
-		spi_write(0x32, pdata, (FIFO_SIZE-1));
+		hw2000_write_fifo(0x32, pdata, (FIFO_SIZE-1));
 		reman = len - (FIFO_SIZE-1);
 		ptx = pdata + (FIFO_SIZE-1);
 	}
@@ -243,34 +289,36 @@ uint8_t hw2000_tx_bytes(uint8_t *pdata, uint8_t len)
     /* tell hw2000 that data is ready and can be sent */
 	hw2000_write_register(0x36, 0x0091); //FIFO0_EN = 1, PTX_FIFO0_OCPY = 1, FIFO0 tx
 	hw2000_write_register(0x37, 0x0000);
-	
 	while(reman != 0){
 		do {
-			val = hw2000_read_register(0x3a);//wait tx empty thres
-		}while(val & 0x100 == 0);
+			reg_val = hw2000_read_register(0x3a);//wait tx empty thres
+		}while((reg_val & 0x100) == 0);
 		if (reman <= FIFO_THRES_EMPTY){//pading the tx size = FIFO_THRES_EMPTY-reman
-			spi_write(0x32, ptx, reman);
+			hw2000_write_fifo(0x32, ptx, reman);
 			reman = 0;
 			ptx = ptx + reman;
 		}else{
-			spi_write(0x32, ptx, FIFO_THRES_EMPTY);
+			hw2000_write_fifo(0x32, ptx, FIFO_THRES_EMPTY);
 			reman -= FIFO_THRES_EMPTY;
 			ptx = ptx + FIFO_THRES_EMPTY;
 		}
 		//hw2000_write_register(0x36, 0x0091); //FIFO0_EN = 1, PTX_FIFO0_OCPY = 1, FIFO0 tx
 		//hw2000_write_register(0x37, 0x0000);
 	}
-
+#if 0
 	do {
 		val = hw2000_read_register(0x30);// FSM_TX_STATE
-	}while(val& 0x0020 == 0);
+	}while(val & 0x0020 != 0);
+#endif
+	while (!(hw2000_read_register(0x3D) & 0x0001));
 
+	hw2000_write_register(0x36, 0x0090);
 	hw2000_write_register(0x3d, 0x0008);// 清中断
 	hw2000.stat = hw2000_txfinish;
 
 	hw2000_rx_reenable();// 默认一直处于接受状态
-
 	hw2000.stat = hw2000_idle;
+	CONFIG_LED2 = 0;
 	return len;
 }
 
@@ -287,56 +335,68 @@ uint8_t hw2000_rx_bytes(uint8_t *pdata)
 	}
 	return 0;
 }
+
 void hw2000_rx(void)
 {
-	uint16_t val;
 	uint8_t pkglen=0, readlen = 0, reman = 0;
 
 	if (hw2000.stat != hw2000_idle)
 		return;
 	
-	val = hw2000_read_register(0x3d);
-	if (val & 0x1 == 0)// no recv irq 
+	reg_val = hw2000_read_register(0x3d);
+	if ((reg_val & 0x0001) == 0)// no recv irq 
 	{
+		return;
+	}
+	reg_val = hw2000_read_register(0x36);
+	if ((reg_val & 0x2000) != 0)//crc is wrong?
+	{
+		hw2000_write_register(0x3d, 0x0008);// 清中断
+		hw2000_rx_reenable();
+		hw2000.rx_err = 1;
 		return;
 	}
 	hw2000.stat = hw2000_rxing;
 
-	//hw2000_write_register(0x3b, 0x0080);// clear rx fifo read pointer
-
+#if 0
 	do {
 		val = hw2000_read_register(0x3a);//wait rx full thresh, the min tx size is FIFO_THRES_EMPTY
 	}while(val & 0x200 == 0);              // so the full thres event must be present
+#endif
+	hw2000_read_fifo(0x32, &pkglen, 1);//read the package len
 
-	spi_read(0x32, &pkglen, 1);//read the package len
-
-	if (pkglen > MAX_BUF_LEN){
+	if ((pkglen == 0) || (pkglen > MAX_BUF_LEN)){
 		hw2000.stat = hw2000_idle;
+		hw2000_write_register(0x3d, 0x0008);// 清中断
 		hw2000_rx_reenable();
+		hw2000.rx_err = 1;
 		return ;
 	}
 
-	spi_read(0x32, &hw2000.rx_data[0], FIFO_THRES_FULL-1);	
+	hw2000_read_fifo(0x32, &hw2000.rx_data[0], pkglen);	
+#if 0	
 	readlen = FIFO_THRES_FULL-1;
-	reman = pkglen = readlen;
+	reman = pkglen - readlen;
 	while(reman != 0){
 		do {
-			val = hw2000_read_register(0x3a);//wait rx full thresh, the min tx size is FIFO_THRES_EMPTY
-		}while(val & 0x200 == 0);				// so the full thres event must be present
+			reg_val = hw2000_read_register(0x3a);//wait rx full thresh, the min tx size is FIFO_THRES_EMPTY
+		}while((reg_val & 0x200) == 0);				// so the full thres event must be present
 		if (reman >= FIFO_THRES_EMPTY) {
-			spi_read(0x32, &hw2000.rx_data[readlen], FIFO_THRES_FULL);
+			hw2000_read_fifo(0x32, &hw2000.rx_data[readlen], FIFO_THRES_FULL);
 			readlen += FIFO_THRES_FULL;
 			reman -= FIFO_THRES_FULL;
 		}
 		else {
-			spi_read(0x32, &hw2000.rx_data[readlen], reman);
+			hw2000_read_fifo(0x32, &hw2000.rx_data[readlen], reman);
 			readlen += reman;
 			reman = 0;
 		}
 	}
+#endif	
 	hw2000.rx_len = pkglen;
 	hw2000.stat = hw2000_rxfinish;
 	hw2000_write_register(0x3d, 0x0008);// 清中断
+        
 	hw2000_rx_reenable();
 	return ;	
 }
