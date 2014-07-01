@@ -16,9 +16,24 @@
 
 section4 uint8_t app_data[MAX_APP_DATA_LEN];
 
-uint8_t app_recv_data();
+static uint8_t curMac = MacPlc;
+
+uint8_t app_recv_data(uint8_t *pdata);
 uint8_t app_send_data();
 void flush_led(uint8_t time);
+
+uint8_t app_recv_data(uint8_t *pdata)
+{
+	uint8_t i = MacTypeEnd;
+	uint8_t len = 0;
+	while(i--){
+		len = linklay_recv_data(pdata, curMac);
+		curMac = (curMac + 1) % MacTypeEnd;
+		if (len)
+			break;
+	}
+	return len;	
+}
 
 void send_process()
 {
@@ -39,7 +54,7 @@ void send_process()
 int8u recv_process()
 {
 	uint8_t i;
-    uint8_t len = linklay_recv_data(&app_data[0], MacHw2000);
+    uint8_t len = app_recv_data(&app_data[0]);
 
     if (len == 16){
         for (i = 0; i< 16; i++)

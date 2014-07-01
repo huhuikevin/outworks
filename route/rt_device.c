@@ -37,15 +37,15 @@ void device_route_process()
 		gateway_addr.laddr = rt_frame.src_addr.laddr;
 	    }
 	    if (rt_frame.route_type == ROUTETYPE_MCAST_DFP){
-		if (!_addr_is_nexthop_to_gateway(&rt_frame.pass_addr)) {//gateway --> device is down path, device ---> gateway is up path
-			if (rt_frame.pass_addr.laddr == rt_frame.src_addr.laddr)//如果和网关直连，加入到gateway的route
-				route_update(&rt_frame);
+			if (!_addr_is_nexthop_to_gateway(&rt_frame.pass_addr)) {//gateway --> device is down path, device ---> gateway is up path
+				if (rt_frame.pass_addr.laddr == rt_frame.src_addr.laddr)//如果和网关直连，加入到gateway的route
+					route_update(&rt_frame);
 
-			if (self_mac.laddr == rt_frame.dst_addr.laddr){
-				device_ack_gateway(&rt_frame);
-			}			
-			return;
-		}
+				if (self_mac.laddr == rt_frame.dst_addr.laddr){
+					device_ack_gateway(&rt_frame);
+				}			
+				return;
+			}
 	    }
 	    route_update(&rt_frame);
 
