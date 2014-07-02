@@ -25,6 +25,25 @@
 
 
 #define CSMA_DB (int8_t)(-30)
+
+#define CRC_LEN 2
+uint16_t _crc(uint8_t data, uint8_t regval)
+{ 
+    uint8_t i;
+ 
+    for (i = 0; i < 8; i++) 
+    { 
+        if (((regval & 0x8000) >> 8) ^ (data & 0x80) ) 
+            regval = (regval << 1) ^ 0x8005; 
+        else 
+            regval = (regval << 1); 
+        
+        data <<= 1; 
+    } 
+    
+    return regval; 
+}
+
 /**************************************************************************
 * 函数名称：plc_mac_proc
 * 功能描述：mac处理流程,处理载波侦听冲突重发和接收
@@ -39,7 +58,9 @@ void plc_mac_proc(void)
 {
     uint8_t plc_sent = 0;
     mac_frame_t *pframe;
-
+	uint8_t i;
+	uint8_t *pdata;
+	uint16_t crc16;
     _mac_rx_buf.indication = 0; //指示仅持续1个TICK
     if (_plc_state == RECV) {
         if (_recv_buf.valid == 1) {
@@ -48,10 +69,16 @@ void plc_mac_proc(void)
 				pframe->dst.laddr == BROADCAST_ADDR ||
 				pframe->dst.laddr == MULTICAST_ADDR) {
                 MMemcpy(&_mac_rx_buf.mac_frame, pframe, 
-                        pframe->len); 
-                _mac_rx_buf.indication = 1;
-				_mac_rx_buf.length = pframe->len - (sizeof(mac_frame_t) - MSDU_MAX_LEN);
-				_mac_rx_buf.rssiv = _recv_buf.rssiv;
+                        pframe->len+CRC_LEN);
+				pdata = (uint8_t *)&_mac_rx_buf.mac_frame;
+				crc16 = _crc(pdata[0], 0xffff);
+				for (i = 1; i < pframe->len; i++)
+					crc16 = _crc(pdata[i], crc16);
+				if (MMemcmp(&crc16,pdata+i,2) == 0) {
+                	_mac_rx_buf.indication = 1;
+					_mac_rx_buf.length = pframe->len - (sizeof(mac_frame_t) - MSDU_MAX_LEN);
+					_mac_rx_buf.rssiv = _recv_buf.rssiv;
+				}
             }
             else {
                 // not send to me
@@ -78,7 +105,7 @@ void plc_mac_proc(void)
             //RLED_ON();
             
             plc_tx_en();
-            plc_sent = plc_data_send(&_mac_tx_buf.mac_frame, _mac_tx_buf.mac_frame.len);
+            plc_sent = plc_data_send(&_mac_tx_buf.mac_frame, _mac_tx_buf.mac_frame.len+CRC_LEN);
             if (!plc_sent)
 	         _mac_tx_buf.stat = tx_csma;
 	     else {
@@ -126,6 +153,9 @@ void plc_mac_proc(void)
 **************************************************************************/
 uint8_t plc_mac_tx(mac_addr *pdst, uint8_t *data, uint8_t length)
 {
+	uint8_t i;
+	uint8_t *pdata;
+	uint16_t crc16;
     if (_mac_tx_buf.stat != tx_idle &&  _mac_tx_buf.stat != tx_ok)
 		return 0;
     _mac_csma.timeout = 0;
@@ -136,11 +166,18 @@ uint8_t plc_mac_tx(mac_addr *pdst, uint8_t *data, uint8_t length)
     //    _mac_tx_buf.timeout = 0;
     //    _mac_tx_buf.count = 0;
     _mac_tx_buf.length = length;
-    _mac_tx_buf.mac_frame.len = length + sizeof(mac_addr) + 1;
+    _mac_tx_buf.mac_frame.len = length + (sizeof(mac_frame_t) - MSDU_MAX_LEN);
     _mac_tx_buf.mac_frame.dst.laddr = pdst->laddr;
     
     MMemcpy(&_mac_tx_buf.mac_frame.data[0], data, length);
+	pdata = (uint8_t *)&_mac_tx_buf.mac_frame;
 
+	crc16 = _crc(pdata[0], 0xffff);
+	for (i = 1; i < _mac_tx_buf.mac_frame.len; i++)
+		crc16 = _crc(pdata[i], crc16);
+	
+	MMemcpy(pdata+i,&crc16, CRC_LEN);
+	
     return length;
 }
 
