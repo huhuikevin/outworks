@@ -72,6 +72,7 @@ uint8_t spi_read_byte()
 void spi_tx_word(uint8_t addr, uint16_t w)
 {
 	uint8_t i;
+	disable_irq();
 	spi_start();
 	spi_write_byte((0x80|addr));//send addr
 	for (i = 0; i< 16; i++){
@@ -84,6 +85,7 @@ void spi_tx_word(uint8_t addr, uint16_t w)
 		w <<= 1;
 	}
 	spi_stop();
+	enable_irq();
 }
 
 uint16_t spi_rx_word(uint8_t addr)
@@ -91,6 +93,7 @@ uint16_t spi_rx_word(uint8_t addr)
 	uint8_t i;
 	uint16_t w = 0;
 	uint8_t spi_bit;
+	disable_irq();
 	spi_start();
 	spi_write_byte(addr);// send addr
 	for (i = 0; i< 16; i++){
@@ -100,6 +103,7 @@ uint16_t spi_rx_word(uint8_t addr)
 			w |= 1;
 	}
 	spi_stop();
+	enable_irq();
 	return w;
 }
 
@@ -107,6 +111,7 @@ uint16_t spi_rx_word(uint8_t addr)
 void spi_write(uint8_t addr , uint8_t *data, uint8_t len)
 {
 	uint8_t i;
+	disable_irq();
 	spi_start();
 	spi_write_byte((0x80|addr));
 
@@ -114,11 +119,13 @@ void spi_write(uint8_t addr , uint8_t *data, uint8_t len)
 		spi_write_byte(*(data + i));
 	}
 	spi_stop();
+	enable_irq();
 }
 
 void spi_read(uint8_t addr , uint8_t *data, uint8_t len)
 {
 	uint8_t i;
+	disable_irq();
 	spi_start();
 	spi_write_byte(addr);
 
@@ -126,6 +133,7 @@ void spi_read(uint8_t addr , uint8_t *data, uint8_t len)
 		*((data + i)) = spi_read_byte();
 	}
 	spi_stop();
+	enable_irq();
 }
 
 void spi_init(void)
