@@ -6,6 +6,7 @@
 #include "tool.h"
 #include "timer16n.h"
 #include "uart.h"
+#include "route.h"
 #include "debug.h"
 
 
@@ -17,6 +18,7 @@
 section4 uint8_t app_data[MAX_APP_DATA_LEN];
 
 static uint8_t curMac = MacPlc;
+static uint8_t curMacRecv;
 
 uint8_t app_recv_data(uint8_t *pdata);
 uint8_t app_send_data();
@@ -24,15 +26,22 @@ void flush_led(uint8_t time);
 
 uint8_t app_recv_data(uint8_t *pdata)
 {
+#if 1
 	uint8_t i = MacTypeEnd;
 	uint8_t len = 0;
 	while(i--){
+		curMacRecv = curMac;
 		len = linklay_recv_data(pdata, curMac);
 		curMac = (curMac + 1) % MacTypeEnd;
-		if (len)
+		if (len) {
 			break;
+		}
 	}
 	return len;	
+#else
+	curMacRecv = MacHw2000;
+	return linklay_recv_data(pdata, MacHw2000);
+#endif
 }
 
 void send_process()
@@ -43,11 +52,17 @@ void send_process()
 
 	for (len = 0; len < 16; len++)
 		app_data[len] = len;
-
+	route_test_set_mac(0);
     dst.laddr = 0xffffffff;
     len = linklay_send_app_data(&dst, app_data, 16, needack);
     if (len){
-        delay_ms(1000);
+        delay_ms(500);
+    }
+	route_test_set_mac(1);
+    dst.laddr = 0xffffffff;
+    len = linklay_send_app_data(&dst, app_data, 16, needack);
+    if (len){
+        delay_ms(500);
     }
 }
 
@@ -64,9 +79,15 @@ int8u recv_process()
         }
 		if (i == 16)
         {
-			OpenRLed;
+        	if (curMacRecv == 0)
+				CONFIG_LED1 = 1;
+			else if(curMacRecv == 1)
+				CONFIG_LED2 = 1;
 			delay_ms(200);
-			CloseRLed;
+			if (curMacRecv == 0)
+				CONFIG_LED1 = 0;
+			else if(curMacRecv == 1)
+				CONFIG_LED2 = 0;
         }
     }
 }
