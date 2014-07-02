@@ -59,5 +59,7 @@ mac_addr *route_found_next_by_dst(mac_addr *pdst);
 route_t *route_process_timeout();
 uint8_t route_have_routes_to_device(void);
 void route_init();
+void route_test_set_mac(uint8_t mac);
+
 #endif /*__ROUTE__H_*/
 
