@@ -62,13 +62,16 @@ route_t *route_found_by_dst(mac_addr *pdst)
 	}
 	return NULL;
 #else
-	rt_table[0].phy_type = CONFIG_DEFAULT_MAC;
+	//rt_table[0].phy_type = CONFIG_DEFAULT_MAC;
 	rt_table[0].next.laddr = pdst->laddr;
    return &rt_table[0];
 #endif
 }
 
-
+void route_test_set_mac(uint8_t mac)
+{
+	rt_table[0].phy_type = mac;
+}
 mac_addr *route_found_next_by_dst(mac_addr *pdst)
 {
 	route_t *proute = route_found_by_dst(pdst);
