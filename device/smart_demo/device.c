@@ -6,6 +6,7 @@
 #include "plc_mac.h"
 //#include "timer8n.h"
 #include "uart.h"
+#include "hg7200.h"
 #include "hw2000_drv.h"
 
 void iniSCI(void)
@@ -59,6 +60,8 @@ void board_init()
 #endif
 #ifdef CONFIG_HG72xx_UART
 	uart_init(CONFIG_HG72xx_UART, 2400, 1, 1);
+	///Emu_initial();
+	//Read_Emu();
 #endif
 }
 

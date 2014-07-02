@@ -2,6 +2,7 @@
 #define _TYPE_DEFINE_H
 
 #include "macro_define.h"
+
 union U_B16B08
 {
 	uint8_t  B08[2];

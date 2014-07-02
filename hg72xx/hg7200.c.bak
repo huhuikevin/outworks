@@ -476,7 +476,7 @@ void Emu_En_Wr(void)
 {
     g_Emu_Reg[0] = WPCMD;  //写保护寄存器写0XE5使能写操作
     g_Emu_Reg[1] = 0xE5;	
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 }
 /*****************计量芯片SPI写禁止************************
 函 数 名：  void Emu_Dis_Wr(void)                    
@@ -488,7 +488,7 @@ void Emu_Dis_Wr(void)
 {
     g_Emu_Reg[0] = WPCMD;  //写保护寄存器写0XDC禁止写操作
     g_Emu_Reg[1] = 0xDC;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 }
 
 /************计量芯片SPI特殊寄存器(0x50)写使能*************
@@ -501,7 +501,7 @@ void Emu_En_Wr_Special(void)
 {
     g_Emu_Reg[0] = 0x7f;//往0X7F寄存器写0X69，使能写特殊寄存器0X50
     g_Emu_Reg[1] = 0x69;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 }
 
 /***********计量芯片SPI特殊寄存器(0x50)写禁止**************
@@ -514,7 +514,7 @@ void Emu_Dis_Wr_Special(void)
 {
     g_Emu_Reg[0] = 0x7f;//往0X7F寄存器写0X96，禁止写特殊寄存器0X50
     g_Emu_Reg[1] = 0x96;			
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 }
 
 
@@ -545,7 +545,7 @@ void  Emu_initial(void)
         g_Emu_Reg[2] = PFSETHLB;
         g_Emu_Reg[3] = PFSETLHB;
         g_Emu_Reg[4] = PFSETLLB;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }
 
     //EMOD设置(计量模式配置寄存器)
@@ -558,7 +558,7 @@ void  Emu_initial(void)
         g_Emu_Reg[0] = EMOD;
         g_Emu_Reg[1] = EMODHB;
         g_Emu_Reg[2] = EMODLB;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }
 
     //PGAC设置(各通道增益设置和HPF使能)
@@ -570,7 +570,7 @@ void  Emu_initial(void)
     {
         g_Emu_Reg[0] = PGAC;
         g_Emu_Reg[1] = PGACB;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }	
 	 //PSTART设置(启动功率门限设置)
     g_Emu_Reg[0] = PSTART;
@@ -582,7 +582,7 @@ void  Emu_initial(void)
         g_Emu_Reg[0] = PSTART;
         g_Emu_Reg[1] = PSTARTHB;
         g_Emu_Reg[2] = PSTARTLB;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }
 		
     Emu_Dis_Wr();   //计量芯片SPI写寄存器禁止
@@ -600,7 +600,7 @@ void  Emu_initial(void)
         g_Emu_Reg[1] = 0x00;
         g_Emu_Reg[2] = 0xc8;
         g_Emu_Reg[3] = 0x28;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }
     Emu_Dis_Wr_Special();   //计量芯片特殊寄存器写禁止
 
@@ -610,46 +610,46 @@ void  Emu_initial(void)
     g_Emu_Reg[0] = PAGAIN;
 	  g_Emu_Reg[1] = 0;
 	  g_Emu_Reg[2] = 0;      
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 
     g_Emu_Reg[0] = APHCAL;
     g_Emu_Reg[1] = 0;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
     
     g_Emu_Reg[0] = PAOFF;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 	
     g_Emu_Reg[0] = UOFF;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] =0;
-    Emu_Com_Op(WRITE);    
+    Emu_Com_Op(SPIWRITE);    
     
     g_Emu_Reg[0] = UGAIN;
     g_Emu_Reg[1] = 0XFB;
     g_Emu_Reg[2] = 0X14;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 
     g_Emu_Reg[0] = IAOFF;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;
-    Emu_Com_Op(WRITE);    
+    Emu_Com_Op(SPIWRITE);    
     
     g_Emu_Reg[0] = IAGAIN;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 
 	 g_Emu_Reg[0] = IBOFF;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;
-    Emu_Com_Op(WRITE);
+    Emu_Com_Op(SPIWRITE);
 
     g_Emu_Reg[0] = IBGAIN;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;
-    Emu_Com_Op(WRITE);	
+    Emu_Com_Op(SPIWRITE);	
     
     //最后经行START设置(计量启动命令字)
     g_Emu_Reg[0] = START;
@@ -660,7 +660,7 @@ void  Emu_initial(void)
     {
         g_Emu_Reg[0] = START;
         g_Emu_Reg[1] = STARTB;
-        Emu_Com_Op(WRITE);
+        Emu_Com_Op(SPIWRITE);
     }   
     Emu_Dis_Wr();	
 
@@ -842,14 +842,14 @@ uint8_t UI_GAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = UGAIN; //寄存器初始化(清零)
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;  
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result)
         return FAILED;
         
     g_Emu_Reg[0] = IAGAIN;
     g_Emu_Reg[1] = 0;
     g_Emu_Reg[2] = 0;  
-    result = Emu_Com_Op(WRITE);	
+    result = Emu_Com_Op(SPIWRITE);	
     if(result)
         return FAILED;
     delay_ms(400); //延时
@@ -871,7 +871,7 @@ uint8_t UI_GAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = UGAIN;//写校准结果到计量芯片
     g_Emu_Reg[1] = u_temp32.B08[1];
     g_Emu_Reg[2] = u_temp32.B08[0];
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result)
         return FAILED;
 
@@ -897,7 +897,7 @@ uint8_t UI_GAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = IAGAIN;           //写校准结果到计量芯片
     g_Emu_Reg[1] = u_temp32.B08[1];
     g_Emu_Reg[2] = u_temp32.B08[0];
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result) 
         return FAILED;
         
@@ -924,7 +924,7 @@ uint8_t  PAGAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = PAGAIN; //寄存器初始化(清零)
     g_Emu_Reg[1] = 0; 
     g_Emu_Reg[2] = 0;  
-    result = Emu_Com_Op(WRITE);	
+    result = Emu_Com_Op(SPIWRITE);	
     if(result)
         return FAILED;    
 
@@ -940,7 +940,7 @@ uint8_t  PAGAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = PAGAIN;   //将校准结果写回计量芯片
     g_Emu_Reg[1] = u_temp32.B08[1];
     g_Emu_Reg[2] = u_temp32.B08[0];
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result)
         return FAILED;     
 
@@ -966,7 +966,7 @@ uint8_t APHCAL_Adjust(uint8_t *Buf)
     Emu_En_Wr();  //打开写使能
     g_Emu_Reg[0] = APHCAL; //校准寄存器初始化(清零)
     g_Emu_Reg[1] = 0;  
-	 result = Emu_Com_Op(WRITE);	
+	 result = Emu_Com_Op(SPIWRITE);	
     if(result)
         return FAILED; 
 
@@ -979,7 +979,7 @@ uint8_t APHCAL_Adjust(uint8_t *Buf)
 
     g_Emu_Reg[0] = APHCAL;          //将校准结果写回计量芯片
     g_Emu_Reg[1] = u_temp32.B08[0];
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result)
         return FAILED; 
    
@@ -1006,7 +1006,7 @@ uint8_t  PAOFF_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = PAOFF; //校准寄存器初始化(清零)
     g_Emu_Reg[1] = 0;  
     g_Emu_Reg[2] = 0; 
-    result = Emu_Com_Op(WRITE);	
+    result = Emu_Com_Op(SPIWRITE);	
     if(result)
         return FAILED; 
     delay_ms(400);
@@ -1023,7 +1023,7 @@ uint8_t  PAOFF_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = PAOFF;       //将校准结果写回到计量芯片
     g_Emu_Reg[1] = u_temp32.B08[1];
     g_Emu_Reg[2] = u_temp32.B08[0];
-    result = Emu_Com_Op(WRITE);
+    result = Emu_Com_Op(SPIWRITE);
     if(result)
         return FAILED; 
     
@@ -1053,7 +1053,7 @@ uint8_t IB_GAIN_Adjust(uint8_t *Buf)
     g_Emu_Reg[0] = IBGAIN; //校准寄存器初始化(清零)
     g_Emu_Reg[1] = 0; 
     g_Emu_Reg[2] = 0;
-    result = Emu_Com_Op(WRITE);	
+    result = Emu_Com_Op(SPIWRITE);	
     if(result)
         return FAILED; 
     delay_ms(400);
@@ -1083,7 +1083,7 @@ uint8_t IB_GAIN_Adjust(uint8_t *Buf)
 	g_Emu_Reg[0] = IBGAIN;    //写校准结果到计量芯片
 	g_Emu_Reg[1] = u_temp32.B08[1];
 	g_Emu_Reg[2] = u_temp32.B08[0];
-	result = Emu_Com_Op(WRITE);
+	result = Emu_Com_Op(SPIWRITE);
    if(result)
        return FAILED;     
 

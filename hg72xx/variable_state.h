@@ -3,7 +3,7 @@
 
 
 //HG7220.c
-extern  union  U_220VFlag   gu_220V_Flag;
+//extern  union  U_220VFlag   gu_220V_Flag;
 
 //rate.c 
 extern  uint8_t    g_Output_Delay;
