@@ -426,12 +426,12 @@ void linklay_recv_process()
 
         if (pHead->protocol == PROTOCOL_ROUTER){
             linklay_process_route(&linklay[i]);
-            return;    
+            continue;    
         }
 
         if (pHead->protocol == PROTOCOL_NORMAL){
             linklay_process_normal(&linklay[i]);
-            return;    
+            continue;    
         }
 
     }
