@@ -53,7 +53,7 @@ void init_t16g1(void)
 **************************************************************************/
 void init_t16g2(uint8_t type)
 {
-    uint16_t t16g1, t16g1r, delta;
+    uint16_t t16g1, delta;
         
     if (type) {        
         delta = _half_time - 81;     //过零后_half_time产生中断 
@@ -83,7 +83,7 @@ void init_t16g2(uint8_t type)
     T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
     T16G2CL=0x10;	  //2:1预分频,每周期0.2ms,关闭定时器
     
-    T16G2RH=delta >> 8;   //过零后7ms产生中断 
+    T16G2RH=delta / 256;   //过零后7ms产生中断 
     T16G2RL=delta;
     
     T16G2L=0x00;
