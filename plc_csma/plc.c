@@ -576,7 +576,8 @@ uint8_t plc_data_send(uint8_t *data, uint8_t length)
     _send_buf.bitoff = 0; 
     _send_buf.byteoff = 0; 
     _send_buf.length = length+4;   
-    
+
+	plc_tx_en();
     _plc_state = SEND;  // 开始发送数据
     
     return length;
@@ -629,14 +630,12 @@ void plc_rx_1bit(void)
         if (PLC_FSK_RXD) {   // 3nop               //sample 0
             DELAY1NOP();    //if/else 对齐
             
-            _chip_flag.chipnum[i] = 1;// 16nop
+			_chip_flag.chipnum[i] = 1;// 16nops
 			DELAY7NOP();
         }
         else {
-
-			_chip_flag.chipnum[i] = 0;
-           
-            DELAY9NOP();    //if/else 对齐
+			_chip_flag.chipnum[i] = 0;// 16nops
+            DELAY9NOP();
         }
         
         //采样间隔62NOP
@@ -843,10 +842,11 @@ void plc_frame_sync(void)
     _frame_sync.syncword <<= 4;
     _frame_sync.syncword |= _chip_flag.bitdata;
 
+#if 0
     if (_frame_sync.bitcnt >= 3) {  //保证一个sys_tick接收指示有效     
         _recv_buf.valid = 0;        //超过则丢弃，开始接收下一帧  
     }
-    
+#endif    
     if (_frame_sync.bitcnt >= 4) {
         _frame_sync.bitcnt = 4;
         if (_frame_sync.syncword == 0xD391) {
@@ -961,7 +961,7 @@ void plc_recv_proc(void)
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-uint16_t plc_crc_rx(uint8_t data, uint8_t regval)
+uint16_t plc_crc_rx(uint8_t data, uint16_t regval)
 { 
     uint8_t i;
  
@@ -989,7 +989,7 @@ uint16_t plc_crc_rx(uint8_t data, uint8_t regval)
 * 修订历史：
 * 修订日期：
 **************************************************************************/
-uint16_t plc_crc_tx(uint8_t data, uint8_t regval)
+uint16_t plc_crc_tx(uint8_t data, uint16_t regval)
 { 
     uint8_t i;
  
@@ -1009,8 +1009,6 @@ uint16_t plc_crc_tx(uint8_t data, uint8_t regval)
 
 void isr(void) interrupt 
 {	
-    uint8_t j;
-    
 	 if (T16G1IF && T16G1IE) {
 		 _sys_tick++;
 		 
@@ -1043,6 +1041,10 @@ void isr(void) interrupt
            if (_t16g1_valid) {          
                 init_t16g2(1);
                 _t16g1_valid = 0;
+            }else {
+            	DELAY100NOP();
+                DELAY5NOP();
+                DELAY2NOP();    //if/else 对齐
             }
             plc_send_proc();    
             break;            
@@ -1051,6 +1053,10 @@ void isr(void) interrupt
             if (_t16g1_valid) {          
                 init_t16g2(1);
                 _t16g1_valid = 0;
+            }else {
+            	DELAY100NOP();
+                DELAY5NOP();
+                DELAY2NOP();    //if/else 对齐
             }
             plc_recv_proc();
             DELAY1NOP();

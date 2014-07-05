@@ -367,7 +367,7 @@ void plc_listen_proc(void);
             regval   前一字节校验结果,初始值取0xFFFF
 * 返回参数：regval   校验结果
 **************************************************************************/
-uint16_t plc_crc_rx(uint8_t data, uint8_t regval);
+uint16_t plc_crc_rx(uint8_t data, uint16_t regval);
 
 /**************************************************************************
 * 函数名称：plc_crc_tx
@@ -376,6 +376,6 @@ uint16_t plc_crc_rx(uint8_t data, uint8_t regval);
             regval   前一字节校验结果,初始值取0xFFFF
 * 返回参数：regval   校验结果
 **************************************************************************/
-uint16_t plc_crc_tx(uint8_t data, uint8_t regval);
+uint16_t plc_crc_tx(uint8_t data, uint16_t regval);
 
 #endif
