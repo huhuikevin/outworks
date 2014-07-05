@@ -3,7 +3,37 @@
 #include "tool.h"
 #include "uart.h"
 
- uint8_t CalChecksum( uint8_t *p_data, uint16_t len)
+
+
+ /**************************************************************************
+ * 函数名称：crc16
+ * 功能描述：crc校验
+ * 输入参数：data	  输入数据
+			 regval   前一字节校验结果,初始值取0xFFFF
+ * 返回参数：regval   校验结果
+ * 函数作者：
+ * 完成日期：
+ * 修订历史：
+ * 修订日期：
+ **************************************************************************/
+ uint16_t calc_crc16(uint8_t data, uint16_t regval)
+ { 
+	 uint8_t i;
+  
+	 for (i = 0; i < 8; i++) 
+	 { 
+		 if (((regval & 0x8000) >> 8) ^ (data & 0x80) ) 
+			 regval = (regval << 1) ^ 0x8005; 
+		 else 
+			 regval = (regval << 1); 
+		 
+		 data <<= 1; 
+	 } 
+	 
+	 return regval; 
+ }
+
+uint8_t CalChecksum( uint8_t *p_data, uint16_t len)
 {
   uint8_t checksum = 0;
   uint16_t i;

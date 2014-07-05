@@ -239,24 +239,6 @@ void console_tx_one_byte(uint8_t b)
 
 }
 
-
-uint16_t uart_crc(uint8_t data, uint8_t regval)
-{ 
-    uint8_t i;
- 
-    for (i = 0; i < 8; i++) 
-    { 
-        if (((regval & 0x8000) >> 8) ^ (data & 0x80) ) 
-            regval = (regval << 1) ^ 0x8005; 
-        else 
-            regval = (regval << 1); 
-        
-        data <<= 1; 
-    } 
-    
-    return regval; 
-}
-
 uint8_t uart_send_frame(uint8_t *pdata, uint8_t len)
 {
 #ifdef CONFIG_LINKLAY_UART
@@ -264,9 +246,9 @@ uint8_t uart_send_frame(uint8_t *pdata, uint8_t len)
 	uint16_t crc;
 	uint8_t i;
 
-	crc = uart_crc(pdata[0], 0xFFFF);
+	crc = calc_crc16(pdata[0], 0xFFFF);
 	for (i = 1; i < len; i++){
-		crc = uart_crc(pdata[i], crc);
+		crc = calc_crc16(pdata[i], crc);
 	}
 	UART_CHAR_SEND(CONFIG_LINKLAY_UART, 0xaa);
 	UART_CHAR_SEND(CONFIG_LINKLAY_UART, len+4);// 0xaa len crc[0] crc[1]
@@ -297,9 +279,9 @@ int8_t uart_rx_frame(uint8_t *pdata)
 	}
 	rlen = uart_recv[CONFIG_LINKLAY_UART].rx_Len-3;
 	pbuf = &uart_recv[CONFIG_LINKLAY_UART].rx_buf[0];
-	crc = uart_crc(pbuf[3], 0xffff);
+	crc = calc_crc16(pbuf[3], 0xffff);
 	for (i = 1; i< rlen; i++){
-		crc = uart_crc(pbuf[i+3], crc);
+		crc = calc_crc16(pbuf[i+3], crc);
 	}
 	uart_recv[CONFIG_LINKLAY_UART].rx_finish = 0;
 	if (crc != pbuf[1]*256 + pbuf[2]){

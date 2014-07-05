@@ -1,6 +1,8 @@
 #ifndef TO_TOOL_H
 #define TO_TOOL_H
 #include "type.h"
+
+uint16_t calc_crc16(uint8_t data, uint16_t regval);
 void MMemcpy( void *dest, void *src, uint16_t count);
 int8u MMemcmp( void *buf1, void *buf2, uint8_t count);
 int8u CalChecksum(uint8_t *p_data, unsigned int len);
