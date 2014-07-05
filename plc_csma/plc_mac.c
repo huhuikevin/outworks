@@ -47,7 +47,7 @@ void plc_mac_proc(void)
     _mac_rx_buf.indication = 0; //指示仅持续1个TICK
     if (_plc_state == RECV) {
         if (_recv_buf.valid == 1) {
-	     pframe = (mac_frame_t *)_recv_buf.data;
+	     	pframe = (mac_frame_t *)_recv_buf.data;
             if (pframe->dst.laddr == self_mac.laddr ||
 				pframe->dst.laddr == BROADCAST_ADDR ||
 				pframe->dst.laddr == MULTICAST_ADDR) {
@@ -58,42 +58,28 @@ void plc_mac_proc(void)
 				_mac_rx_buf.length = pframe->len - (sizeof(mac_frame_t) - MSDU_MAX_LEN);
 				_mac_rx_buf.rssiv = _recv_buf.rssiv;
             }
-            else {
-                // not send to me
-                //return;
-            }
-        }
-        else {
-            //SLED_OFF();
-        }    
+			_recv_buf.valid = 0;			
+        }		
     }
      
     if ((_mac_tx_buf.stat == tx_csma) && (_mac_csma.timeout <= _sys_tick) ) {
-        //_mac_csma.timeout = 0;
         _mac_tx_buf.stat = tx_request;
     }
        
     if (_mac_tx_buf.stat == tx_request) { 
-        //_mac_tx_buf.request = 0;          
-        //_mac_tx_buf.count++;
-        
         if ((int8_t)_listen_buf.rssi < CSMA_DB) {   //空闲直接发射    
             _mac_tx_buf.listen = 0;    
-            
-            //RLED_ON();
-            
-            plc_tx_en();
+ 
             plc_sent = plc_data_send(&_mac_tx_buf.mac_frame, _mac_tx_buf.mac_frame.len);
             if (!plc_sent)
-	         _mac_tx_buf.stat = tx_csma;
-	     else {
-		  _mac_tx_buf.stat = tx_ok;
-            	  return; 
-	     }
+	        	_mac_tx_buf.stat = tx_csma;
+	     	else {
+		  		_mac_tx_buf.stat = tx_ok;
+           		return; 
+	    	}
         }
         else {
-	     _mac_tx_buf.stat = tx_csma;
-            //RLED_OFF();   
+	     	_mac_tx_buf.stat = tx_csma; 
         }  
     }
 
