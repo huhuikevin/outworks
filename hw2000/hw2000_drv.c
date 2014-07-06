@@ -310,10 +310,19 @@ void hw2000_init(uint8_t bps)
 }
 #endif
 
+uint8_t hw2000_read_rssi()
+{
+	uint8_t rssi;
+	reg_val = hw2000_read_register(0x2d);
+
+	rssi = reg_val & 0xff;
+	return rssi;
+}
 uint8_t hw2000_tx_bytes(uint8_t *pdata, uint8_t len)
 {
 	uint8_t reman;
 	uint8_t *ptx = pdata;
+
 	//enable transmit 
 	if (hw2000.stat != hw2000_idle)
 		return 0;
