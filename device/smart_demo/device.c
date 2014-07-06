@@ -49,7 +49,7 @@ void board_init()
 	plc_mac_init(50,2);
     //timer8n_init();
 #ifdef CONFIG_HW2000    
-	hw2000_init();
+	hw2000_init(HW2000_SPEED_BPS_1M);
 #endif
 #ifdef CONFIG_LINKLAY_UART	
 	uart_init(CONFIG_LINKLAY_UART, 9600, 0, 0);

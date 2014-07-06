@@ -6,6 +6,7 @@
 #include "timer16n.h"
 #include "tool.h"
 #include "spi_drv.h"
+#include "hw2000_drv.h"
 
 #ifdef CONFIG_HW2000
 
@@ -231,7 +232,9 @@ void hw2000_init()
 	
 }
 #endif
-void hw2000_init(void)
+
+#if 0
+void hw2000_init(uint8_t bps)
 {
     uint8_t i;
     uint16_t agcTab[18] = {0x0200, 0x0200, 0x0200, 0x0200, 0x0208, 0x0210, 
@@ -261,7 +264,51 @@ void hw2000_init(void)
 	hw2000_rx_enable();
     
 }
+#else
+void hw2000_init(uint8_t bps)
+{
+    uint8_t i;
+    uint16_t agcTab[18] = {0x0012, 0x0012, 0x0012, 0x0012, 0x0012, 0x0012,
+                           0x0210, 0x0218, 0x0410, 0x0450, 0x0490, 0x04D0,
+                           0x04D8, 0x06D0, 0x06D8, 0x06E0, 0x06E1, 0x06E2};
 
+	hw2000_port_init();
+	delay_ms(50);
+    hw2000_write_register(0x4C, 0x55AA);
+    
+    hw2000_write_register(0x01, 0x0FFF);
+	hw2000_write_register(0x02, 0x44CC);
+    hw2000_write_register(0x08, 0x73A8);
+    //hw2000_write_register(0x09, 0xC481);
+    //hw2000_write_register(0x28, 0xF402);
+    hw2000_write_register(0x28, ((FIFO_THRES_EMPTY - 1)<<11) | ((FIFO_THRES_FULL -1) << 6) | 0x2);//(0x28, 0x8403);
+    hw2000_write_register(0x2C, 0x918B);
+    
+    for (i = 0; i < 18; i++) {
+        hw2000_write_register(0x50 + i, agcTab[i]);            
+    }
+    if (bps == HW2000_SPEED_BPS_250K) {
+		hw2000_write_register(0x2A, 0x407D);
+		hw2000_write_register(0x1A, 0x0931);
+		hw2000_write_register(0x19, 0x7884);
+		
+		hw2000_write_register(0x20, 0xF060);
+    }else if (bps == HW2000_SPEED_BPS_1M) {
+		hw2000_write_register(0x1B, 0xE754);
+		hw2000_write_register(0x06, 0xB000);
+		hw2000_write_register(0x07, 0x54E0);
+		hw2000_write_register(0x1C, 0x51A0);
+		hw2000_write_register(0x19, 0x4584);
+		 
+		hw2000_write_register(0x20, 0xF000); //preamble 16bytes sync 48bits trailer 4bits
+	}
+	hw2000_write_register(0x22, 0x1830); 
+	hw2000_write_register(0x3d, 0x8888);//Çå³þÖÐ¶Ï
+	hw2000_write_register(0x37, 0x0000);
+	hw2000_rx_enable();
+    
+}
+#endif
 
 uint8_t hw2000_tx_bytes(uint8_t *pdata, uint8_t len)
 {
