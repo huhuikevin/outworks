@@ -57,9 +57,10 @@ void plc_mac_proc(void)
                 _mac_rx_buf.indication = 1;
 				_mac_rx_buf.length = pframe->len - (sizeof(mac_frame_t) - MSDU_MAX_LEN);
 				_mac_rx_buf.rssiv = _recv_buf.rssiv;
-            }
-			_recv_buf.valid = 0;			
-        }		
+            }			
+        }
+		if (_recv_buf.valid != 0)
+			_recv_buf.valid = 0;
     }
      
     if ((_mac_tx_buf.stat == tx_csma) && (_mac_csma.timeout <= _sys_tick) ) {
