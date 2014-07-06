@@ -8,7 +8,7 @@
 #include "uart.h"
 #include "route.h"
 #include "debug.h"
-
+#include "hw2000_drv.h"
 
 #define    OpenRLed CONFIG_LED2=1
 #define    CloseRLed CONFIG_LED2=0
@@ -52,18 +52,19 @@ void send_process()
 
 	for (len = 0; len < 16; len++)
 		app_data[len] = len;
+#ifdef PLC_TEST	
 	route_test_set_mac(0);
     dst.laddr = 0xffffffff;
     len = linklay_send_app_data(&dst, app_data, 16, needack);
-    if (len){
-        delay_ms(500);
-    }
+    delay_ms(500);
+#endif
+#ifdef HW2000_TEST
 	route_test_set_mac(1);
     dst.laddr = 0xffffffff;
     len = linklay_send_app_data(&dst, app_data, 16, needack);
-    if (len){
-        delay_ms(500);
-    }
+    delay_ms(500);
+#endif
+	
 }
 
 int8u recv_process()
@@ -110,7 +111,7 @@ void uart_test()
 #endif
 }
 
-void plc_test()
+void mac_test()
 {
 #ifdef SENDER
 	send_process();
@@ -125,9 +126,8 @@ void app_process(void)
 	uart_test();
 #endif
 
-#ifdef PLC_TEST
-	plc_test();
-#endif
+	mac_test();
+	//hw2000_read_rssi();
 }
 
 
