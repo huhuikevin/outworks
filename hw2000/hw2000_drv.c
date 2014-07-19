@@ -115,6 +115,24 @@ void hw2000_port_init()
 		
 	CONFIG_3_3V_CTRL = 1; //电源开
 }
+/**************************************************************************
+* 函数名称：hw2000_set_rf_chnl
+* 功能描述：设置RF 的工作频点2402 + chnl (MHz)
+* 输入参数：uint8_t chnl 0 -- 81
+* 返回参数：无
+* 函数作者：
+* 完成日期：
+* 修订历史：
+* 修订日期：
+**************************************************************************/
+void hw2000_set_rf_chnl(uint8_t chnl)
+{
+	if (chnl > 81)
+		chnl = 81;
+	reg_val = 0x1800 | (chnl & 0x7f);
+	hw2000_write_register(0x22, reg_val);
+}
+
 #if 0
 void hw2000_init()
 {
@@ -302,7 +320,8 @@ void hw2000_init(uint8_t bps)
 		 
 		hw2000_write_register(0x20, 0xF000); //preamble 16bytes sync 48bits trailer 4bits
 	}
-	hw2000_write_register(0x22, 0x1830); 
+	//hw2000_write_register(0x22, 0x1830); 
+	hw2000_set_rf_chnl(0x30);
 	hw2000_write_register(0x3d, 0x8888);//清楚中断
 	hw2000_write_register(0x37, 0x0000);
 	hw2000_rx_enable();
