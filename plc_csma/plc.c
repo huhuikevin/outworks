@@ -1047,6 +1047,7 @@ void isr(void) interrupt
         switch (_plc_state) {        
         case SEND: {    
            DELAY3NOP();  //与REC对齐
+ #if 0          
            if (_t16g1_valid) {          
                 init_t16g2(1);
                 _t16g1_valid = 0;
@@ -1055,10 +1056,12 @@ void isr(void) interrupt
                 DELAY5NOP();
                 DELAY2NOP();    //if/else 对齐
             }
+#endif			
             plc_send_proc();    
             break;            
             }            
         case RECV: {
+#if 0			
             if (_t16g1_valid) {          
                 init_t16g2(1);
                 _t16g1_valid = 0;
@@ -1067,6 +1070,7 @@ void isr(void) interrupt
                 DELAY5NOP();
                 DELAY2NOP();    //if/else 对齐
             }
+#endif			
             plc_recv_proc();
             DELAY1NOP();
             break;

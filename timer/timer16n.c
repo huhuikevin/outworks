@@ -64,10 +64,11 @@ void init_t16g2(uint8_t type)
 		t16g1 += 27;
         T16G1H = t16g1 / 256;
         T16G1L = t16g1;
-		
+
     	T16G1CL = 0x21;   //(Fosc/2) 4:1预分频,每周期0.4us 
     	t16g1 -= 27;
-        if (t16g1 >= _now_time) {        
+
+        if (t16g1 > _now_time) {        
             delta = t16g1 - _now_time;
             DELAY10NOP();
             DELAY1NOP();    //if/else对齐			
@@ -77,7 +78,7 @@ void init_t16g2(uint8_t type)
             delta = 0xFFFF - _now_time;
             delta += t16g1 + 1;
         }
-        delta = _half_time - 7750 - delta*2 - 125; //过零点前1.55ms产生中断   
+        delta = 50000 - 7750 - delta*2 - 168; //过零点前1.55ms产生中断   
     }
     
     T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
