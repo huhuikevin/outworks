@@ -623,19 +623,22 @@ void plc_rx_1bit(void)
 	DELAY100NOP();
 	DELAY100NOP();
 	DELAY100NOP();
-	DELAY10NOP();
+	DELAY100NOP();
+	DELAY80NOP();
  #endif
      //do {
      for (i = 0; i < 62; i++) { 
         if (PLC_FSK_RXD) {   // 3nop               //sample 0
             DELAY1NOP();    //if/else 对齐
             
-			_chip_flag.chipnum[i] = 1;// 16nops
-			DELAY7NOP();
+			_chip_flag.chipnum[i]++;
+
         }
         else {
-			_chip_flag.chipnum[i] = 0;// 16nops
-            DELAY9NOP();
+			//_chip_flag.chipnum[i] = 0;// 16nops
+            DELAY20NOP();
+			DELAY3NOP();
+			DELAY2NOP();
         }
         
         //采样间隔62NOP
@@ -820,9 +823,9 @@ void plc_bit_recv(void)
         }
     }
     
-    //for (i = 0; i < 62; i++) {     //清空缓冲区
-        //_chip_flag.chipnum[i] = 0;
-    //} 
+    for (i = 0; i < 62; i++) {     //清空缓冲区
+        _chip_flag.chipnum[i] = 0;
+    } 
 }
 
 /**************************************************************************
@@ -1020,57 +1023,21 @@ void isr(void) interrupt
 {	
 	 if (T16G1IF && T16G1IE) {
 		 _sys_tick++;
-		 
-		 _last_time = _now_time;			 //记录上一次过零时刻
+
 		 _now_time = T16G1RH*256 | T16G1RL;  //记录当前过零时刻
 		 
-		 if (_now_time > _last_time) {		  
-			 _half_time = _now_time - _last_time; 
-		 }
-		 else
-		 {
-			 _half_time = 0xFFFF - _last_time;
-			 _half_time += _now_time + 1;
-		 }		  
-		 
 		 init_t16g2(0);
-		 _t16g1_valid = 1;
-		  T16G1IF = 0;	
-
+		 T16G1IF = 0;	
     }
 
-    if (T16G2IF && T16G2IE) {       //1   
-        T16G2IE = 0; 
-	    T16G2IF = 0;        
-        T16G1IF = 0;
-        
+    if (T16G2IF && T16G2IE) {      
         switch (_plc_state) {        
         case SEND: {    
-           DELAY3NOP();  //与REC对齐
- #if 0          
-           if (_t16g1_valid) {          
-                init_t16g2(1);
-                _t16g1_valid = 0;
-            }else {
-            	DELAY100NOP();
-                DELAY5NOP();
-                DELAY2NOP();    //if/else 对齐
-            }
-#endif			
+            DELAY7NOP();  //与REC对齐
             plc_send_proc();    
             break;            
             }            
         case RECV: {
-#if 0			
-            if (_t16g1_valid) {          
-                init_t16g2(1);
-                _t16g1_valid = 0;
-            }else {
-            	DELAY100NOP();
-                DELAY5NOP();
-                DELAY2NOP();    //if/else 对齐
-            }
-#endif			
             plc_recv_proc();
             DELAY1NOP();
             break;
@@ -1083,6 +1050,8 @@ void isr(void) interrupt
             NOP();
             break;        
         }
+		T16G2IE = 0; 
+	    T16G2IF = 0;
     }
 
 }

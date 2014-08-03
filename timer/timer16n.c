@@ -55,31 +55,26 @@ void init_t16g2(uint8_t type)
 {
     uint16_t t16g1, delta;
         
-    if (type) {        
-        delta = _half_time - 81;     //过零后_half_time产生中断 
-    }
-    else {
-        T16G1CL = 0x20;   //关闭timer
-        t16g1 = T16G1H*256 | T16G1L;
-		t16g1 += 27;
-        T16G1H = t16g1 / 256;
-        T16G1L = t16g1;
+    T16G1CL = 0x20;   //关闭timer
+    t16g1 = T16G1H*256 | T16G1L;
+	t16g1 += 27;
+    T16G1H = t16g1 / 256;
+    T16G1L = t16g1;
 
-    	T16G1CL = 0x21;   //(Fosc/2) 4:1预分频,每周期0.4us 
-    	t16g1 -= 27;
+   	T16G1CL = 0x21;   //(Fosc/2) 4:1预分频,每周期0.4us 
+    t16g1 -= 27;
 
-        if (t16g1 > _now_time) {        
-            delta = t16g1 - _now_time;
-            DELAY10NOP();
-            DELAY1NOP();    //if/else对齐			
-        }
-        else
-        {
-            delta = 0xFFFF - _now_time;
-            delta += t16g1 + 1;
-        }
-        delta = 50000 - 7750 - delta*2 - 168; //过零点前1.55ms产生中断   
+    if (t16g1 > _now_time) {        
+        delta = t16g1 - _now_time;
+        DELAY10NOP();
+        DELAY1NOP();    //if/else对齐			
     }
+    else
+    {
+        delta = 0xFFFF - _now_time;
+        delta += t16g1 + 1;
+    }
+    delta = 50000 - 7750 - delta*2 - 168; //过零点前1.55ms产生中断   
     
     T16G2CH=0x0b;   //匹配时复位T16GxH/T16GxL
     T16G2CL=0x10;	  //2:1预分频,每周期0.2ms,关闭定时器
